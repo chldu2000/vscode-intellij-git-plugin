@@ -13,6 +13,10 @@ textarea {
   font: inherit;
 }
 
+input {
+  font: inherit;
+}
+
 .appShell {
   display: grid;
   grid-template-rows: auto auto 1fr;
@@ -69,6 +73,29 @@ textarea {
   min-height: 48px;
   resize: vertical;
   width: 100%;
+}
+
+.commitOptions {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, max-content) minmax(130px, 1fr) minmax(150px, 1fr);
+  margin-top: 8px;
+}
+
+.commitOptions label {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.commitOptions input[type="text"],
+.commitOptions input:not([type]) {
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  color: var(--vscode-input-foreground);
+  min-width: 0;
+  padding: 3px 6px;
 }
 
 .reviewLayout {

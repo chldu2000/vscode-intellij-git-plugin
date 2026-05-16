@@ -113,6 +113,71 @@ describe('CommitService', () => {
     expect(remainingDiff).toContain('-three');
     expect(remainingDiff).toContain('+THREE');
   });
+
+  it('supports sign-off and author override', async () => {
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+    const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+    const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+    await commits.commitSelected(repo, files, selection, {
+      message: 'commit with metadata',
+      signOff: true,
+      author: {
+        name: 'Override Author',
+        email: 'override@example.com'
+      },
+      env: authorEnv().env
+    });
+
+    expect((await git.exec(repo, ['log', '-1', '--format=%an <%ae>%n%B'])).stdout).toContain(
+      'Override Author <override@example.com>'
+    );
+    expect((await git.exec(repo, ['log', '-1', '--format=%B'])).stdout).toContain(
+      'Signed-off-by: Override Author <override@example.com>'
+    );
+  });
+
+  it('amends the last commit when requested', async () => {
+    const originalParent = (await git.exec(repo, ['rev-parse', 'HEAD^@'])).stdout.trim();
+    const originalCommit = (await git.exec(repo, ['rev-parse', 'HEAD'])).stdout.trim();
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+    const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+    const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+    const amendedCommit = await commits.commitSelected(repo, files, selection, {
+      message: 'amended initial',
+      amend: true,
+      env: authorEnv().env
+    });
+
+    expect(amendedCommit).not.toBe(originalCommit);
+    expect((await git.exec(repo, ['log', '-1', '--format=%s'])).stdout.trim()).toBe('amended initial');
+    expect((await git.exec(repo, ['rev-parse', 'HEAD^@'])).stdout.trim()).toBe(originalParent);
+  });
+
+  it('pushes after a successful commit when requested', async () => {
+    const remote = await mkdtemp(path.join(tmpdir(), 'intellij-git-client-remote-'));
+
+    try {
+      await git.exec(remote, ['init', '--bare']);
+      await git.exec(repo, ['remote', 'add', 'origin', remote]);
+      await git.exec(repo, ['push', '-u', 'origin', 'HEAD']);
+      await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+      const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+      const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+      const commit = await commits.commitSelected(repo, files, selection, {
+        message: 'commit and push',
+        push: true,
+        env: authorEnv().env
+      });
+
+      const branch = (await git.exec(repo, ['branch', '--show-current'])).stdout.trim();
+      expect((await git.exec(remote, ['rev-parse', `refs/heads/${branch}`])).stdout.trim()).toBe(commit);
+    } finally {
+      await rm(remote, { recursive: true, force: true });
+    }
+  });
 });
 
 function authorEnv() {

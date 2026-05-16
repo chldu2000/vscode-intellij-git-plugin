@@ -58,6 +58,64 @@ export function DiffReviewApp({ initialState }: DiffReviewAppProps) {
             vscode.postMessage({ type: 'updateCommitMessage', value });
           }}
         />
+        <div className="commitOptions" aria-label="Commit options">
+          <label>
+            <input
+              checked={state.commitOptions.amend}
+              type="checkbox"
+              onChange={(event) => {
+                const commitOptions = { ...state.commitOptions, amend: event.currentTarget.checked };
+                updateState({ ...state, commitOptions });
+                vscode.postMessage({ type: 'updateCommitOptions', value: commitOptions });
+              }}
+            />
+            Amend
+          </label>
+          <label>
+            <input
+              checked={state.commitOptions.signOff}
+              type="checkbox"
+              onChange={(event) => {
+                const commitOptions = { ...state.commitOptions, signOff: event.currentTarget.checked };
+                updateState({ ...state, commitOptions });
+                vscode.postMessage({ type: 'updateCommitOptions', value: commitOptions });
+              }}
+            />
+            Sign-off
+          </label>
+          <label>
+            <input
+              checked={state.commitOptions.push}
+              type="checkbox"
+              onChange={(event) => {
+                const commitOptions = { ...state.commitOptions, push: event.currentTarget.checked };
+                updateState({ ...state, commitOptions });
+                vscode.postMessage({ type: 'updateCommitOptions', value: commitOptions });
+              }}
+            />
+            Push
+          </label>
+          <input
+            aria-label="Author name"
+            placeholder="Author name"
+            value={state.commitOptions.authorName}
+            onInput={(event) => {
+              const commitOptions = { ...state.commitOptions, authorName: event.currentTarget.value };
+              updateState({ ...state, commitOptions });
+              vscode.postMessage({ type: 'updateCommitOptions', value: commitOptions });
+            }}
+          />
+          <input
+            aria-label="Author email"
+            placeholder="Author email"
+            value={state.commitOptions.authorEmail}
+            onInput={(event) => {
+              const commitOptions = { ...state.commitOptions, authorEmail: event.currentTarget.value };
+              updateState({ ...state, commitOptions });
+              vscode.postMessage({ type: 'updateCommitOptions', value: commitOptions });
+            }}
+          />
+        </div>
       </div>
 
       <div className="reviewLayout">

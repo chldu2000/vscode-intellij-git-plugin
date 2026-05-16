@@ -7,6 +7,15 @@ export interface DiffReviewState {
   files: DiffFile[];
   selection: DiffSelection;
   commitMessage: string;
+  commitOptions: DiffReviewCommitOptions;
+}
+
+export interface DiffReviewCommitOptions {
+  amend: boolean;
+  signOff: boolean;
+  push: boolean;
+  authorName: string;
+  authorEmail: string;
 }
 
 export type ExtensionToWebviewMessage =
@@ -37,6 +46,10 @@ export type WebviewToExtensionMessage =
   | {
       type: 'updateCommitMessage';
       value: string;
+    }
+  | {
+      type: 'updateCommitOptions';
+      value: DiffReviewCommitOptions;
     }
   | {
       type: 'refresh';

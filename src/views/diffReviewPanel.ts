@@ -11,7 +11,8 @@ import {
   toggleLine
 } from '../webview/selection';
 
-type DiffReviewReload = () => Promise<Omit<DiffReviewState, 'selection' | 'commitMessage'>>;
+type DiffReviewPanelInput = Omit<DiffReviewState, 'selection' | 'commitMessage' | 'commitOptions'>;
+type DiffReviewReload = () => Promise<DiffReviewPanelInput>;
 
 export class DiffReviewPanel {
   private panel: vscode.WebviewPanel | undefined;
@@ -25,11 +26,18 @@ export class DiffReviewPanel {
     private readonly output: vscode.OutputChannel
   ) {}
 
-  public open(state: Omit<DiffReviewState, 'selection' | 'commitMessage'>, reload?: DiffReviewReload): void {
+  public open(state: DiffReviewPanelInput, reload?: DiffReviewReload): void {
     this.state = {
       ...state,
       selection: createInitialSelection(state.files),
-      commitMessage: ''
+      commitMessage: '',
+      commitOptions: {
+        amend: false,
+        signOff: false,
+        push: false,
+        authorName: '',
+        authorEmail: ''
+      }
     };
     this.reload = reload;
 
@@ -89,6 +97,9 @@ export class DiffReviewPanel {
       case 'updateCommitMessage':
         this.state.commitMessage = message.value;
         break;
+      case 'updateCommitOptions':
+        this.state.commitOptions = message.value;
+        break;
       case 'openSource':
         await this.openSource(this.state.files[message.fileIndex]);
         break;
@@ -122,6 +133,11 @@ export class DiffReviewPanel {
         this.state.selection,
         {
           message: this.state.commitMessage
+          ,
+          amend: this.state.commitOptions.amend,
+          signOff: this.state.commitOptions.signOff,
+          push: this.state.commitOptions.push,
+          author: this.authorOverride()
         }
       );
       this.output.appendLine(`Committed selected changes: ${commit}`);
@@ -144,10 +160,32 @@ export class DiffReviewPanel {
     this.state = {
       ...next,
       selection: createInitialSelection(next.files),
-      commitMessage: ''
+      commitMessage: '',
+      commitOptions: {
+        amend: false,
+        signOff: false,
+        push: false,
+        authorName: '',
+        authorEmail: ''
+      }
     };
     this.panel.title = next.title;
     this.panel.webview.html = this.renderHtml(this.panel.webview, this.state);
+  }
+
+  private authorOverride(): { name: string; email: string } | undefined {
+    const name = this.state?.commitOptions.authorName.trim() ?? '';
+    const email = this.state?.commitOptions.authorEmail.trim() ?? '';
+
+    if (name.length === 0 && email.length === 0) {
+      return undefined;
+    }
+
+    if (name.length === 0 || email.length === 0) {
+      throw new Error('Author override requires both name and email.');
+    }
+
+    return { name, email };
   }
 
   private async openSource(file: DiffFile | undefined): Promise<void> {

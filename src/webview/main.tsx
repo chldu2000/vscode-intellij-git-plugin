@@ -22,6 +22,13 @@ function fallbackState(): DiffReviewState {
     title: 'Diff Review',
     files: [],
     selection: createInitialSelection([]),
-    commitMessage: ''
+    commitMessage: '',
+    commitOptions: {
+      amend: false,
+      signOff: false,
+      push: false,
+      authorName: '',
+      authorEmail: ''
+    }
   };
 }
