@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { CommitService } from '../git/commitService';
+import { invalidateStaleSelections } from '../git/diffIdentity';
 import type { DiffFile } from '../git/diffParser';
 import type { DiffReviewState, WebviewToExtensionMessage } from '../webview/messages';
 import { canCommitSelectedChanges } from '../webview/commitValidation';
@@ -127,6 +128,10 @@ export class DiffReviewPanel {
     }
 
     try {
+      if (await this.invalidateStaleSelectionsBeforeCommit()) {
+        return;
+      }
+
       const commit = await this.commits.commitSelected(
         this.state.repositoryRoot,
         this.state.files,
@@ -171,6 +176,34 @@ export class DiffReviewPanel {
     };
     this.panel.title = next.title;
     this.panel.webview.html = this.renderHtml(this.panel.webview, this.state);
+  }
+
+  private async invalidateStaleSelectionsBeforeCommit(): Promise<boolean> {
+    if (this.reload === undefined || this.state === undefined || this.panel === undefined) {
+      return false;
+    }
+
+    const current = await this.reload();
+    const result = invalidateStaleSelections(this.state.files, current.files, this.state.selection);
+
+    if (result.stale.length === 0) {
+      this.state = {
+        ...this.state,
+        files: current.files,
+        selection: result.selection
+      };
+      return false;
+    }
+
+    this.state = {
+      ...current,
+      selection: result.selection,
+      commitMessage: this.state.commitMessage,
+      commitOptions: this.state.commitOptions
+    };
+    this.panel.webview.html = this.renderHtml(this.panel.webview, this.state);
+    await vscode.window.showWarningMessage('Some selected changes changed on disk. Review the refreshed diff and select them again.');
+    return true;
   }
 
   private authorOverride(): { name: string; email: string } | undefined {
