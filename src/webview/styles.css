@@ -1,0 +1,203 @@
+:root {
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+}
+
+body {
+  margin: 0;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.appShell {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  height: 100vh;
+}
+
+.toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.toolbar h1 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 3px;
+}
+
+.summary {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+.toolbarActions {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbarActions button {
+  background: var(--vscode-button-background);
+  border: 0;
+  border-radius: 4px;
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.toolbarActions button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.commitBar {
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding: 8px 12px;
+}
+
+.commitBar textarea {
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  color: var(--vscode-input-foreground);
+  min-height: 48px;
+  resize: vertical;
+  width: 100%;
+}
+
+.reviewLayout {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  min-height: 0;
+}
+
+.fileNavigator {
+  border-right: 1px solid var(--vscode-panel-border);
+  overflow: auto;
+}
+
+.fileRow {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 7px;
+  grid-template-columns: auto auto 1fr;
+  min-height: 30px;
+  padding: 5px 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.fileRow.active {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusDot {
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.statusDot.modified {
+  background: var(--vscode-gitDecoration-modifiedResourceForeground);
+}
+
+.statusDot.added {
+  background: var(--vscode-gitDecoration-addedResourceForeground);
+}
+
+.statusDot.deleted {
+  background: var(--vscode-gitDecoration-deletedResourceForeground);
+}
+
+.statusDot.renamed {
+  background: var(--vscode-gitDecoration-renamedResourceForeground);
+}
+
+.diffPane {
+  min-width: 0;
+  overflow: auto;
+}
+
+.diffPane.empty,
+.binaryNotice {
+  color: var(--vscode-descriptionForeground);
+  padding: 16px;
+}
+
+.diffTitle {
+  align-items: center;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.diffTitle h2 {
+  font-size: 13px;
+  margin: 0;
+}
+
+.hunk {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.hunkHeader {
+  align-items: center;
+  background: var(--vscode-diffEditor-unchangedRegionBackground);
+  display: flex;
+  gap: 8px;
+  padding: 5px 8px;
+}
+
+.hunkLines {
+  display: grid;
+}
+
+.diffLine {
+  display: grid;
+  grid-template-columns: 28px 48px 48px minmax(0, 1fr);
+  min-height: 22px;
+}
+
+.diffLine code,
+.hunkHeader code {
+  font-family: var(--vscode-editor-font-family);
+  white-space: pre;
+}
+
+.lineSelect,
+.lineNo {
+  color: var(--vscode-editorLineNumber-foreground);
+  padding: 2px 6px;
+  text-align: right;
+}
+
+.diffLine.add {
+  background: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+.diffLine.delete {
+  background: var(--vscode-diffEditor-removedTextBackground);
+}
+
+.diffLine code {
+  overflow-x: auto;
+  padding: 2px 8px;
+}

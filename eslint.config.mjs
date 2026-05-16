@@ -16,7 +16,11 @@ export default [
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
-        __dirname: 'readonly'
+        __dirname: 'readonly',
+        document: 'readonly',
+        window: 'readonly',
+        acquireVsCodeApi: 'readonly',
+        MouseEvent: 'readonly'
       }
     },
     plugins: {

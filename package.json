@@ -59,7 +59,7 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p .",
+    "compile": "tsc -p . && vite build",
     "watch": "tsc -w -p .",
     "test": "vitest run",
     "lint": "eslint src"
