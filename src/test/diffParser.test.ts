@@ -21,6 +21,7 @@ describe('parseUnifiedDiff', () => {
       {
         oldPath: 'src/a.ts',
         newPath: 'src/a.ts',
+        indexLine: 'index 1111111..2222222 100644',
         changeType: 'modified',
         binary: false,
         hunks: [

@@ -4,6 +4,7 @@ export type DiffLineType = 'context' | 'add' | 'delete';
 export interface DiffFile {
   oldPath?: string;
   newPath?: string;
+  indexLine?: string;
   changeType: DiffChangeType;
   binary: boolean;
   hunks: DiffHunk[];
@@ -48,6 +49,11 @@ export function parseUnifiedDiff(diff: string): DiffFile[] {
     if (line === 'new file mode 100644' || line.startsWith('new file mode ')) {
       currentFile.changeType = 'added';
       currentFile.oldPath = undefined;
+      continue;
+    }
+
+    if (line.startsWith('index ')) {
+      currentFile.indexLine = line;
       continue;
     }
 

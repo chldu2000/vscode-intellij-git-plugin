@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 
 export interface GitExecOptions {
   env?: Record<string, string | undefined>;
+  input?: string;
 }
 
 export interface GitExecResult {
@@ -39,14 +40,18 @@ export class GitService {
           ...process.env,
           ...options.env
         },
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: [options.input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe']
       });
 
       const stdoutChunks: Buffer[] = [];
       const stderrChunks: Buffer[] = [];
 
-      child.stdout.on('data', (chunk: Buffer) => stdoutChunks.push(chunk));
-      child.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+      child.stdout?.on('data', (chunk: Buffer) => stdoutChunks.push(chunk));
+      child.stderr?.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+
+      if (options.input !== undefined && child.stdin !== null) {
+        child.stdin.end(options.input);
+      }
 
       child.on('error', (error) => {
         reject(error);
