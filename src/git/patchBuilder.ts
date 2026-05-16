@@ -47,7 +47,7 @@ function buildHunkPatch(hunk: DiffHunk, selectedLineIndexes: number[] | undefine
   }
 
   const selected = new Set(selectedLineIndexes);
-  const lines = hunk.lines.flatMap((line, lineIndex) => selectedPatchLines(line, selected.has(lineIndex)));
+  const lines = buildSelectedLines(hunk.lines, selected);
 
   if (!lines.some((line) => line.type === 'add' || line.type === 'delete')) {
     return undefined;
@@ -58,6 +58,57 @@ function buildHunkPatch(hunk: DiffHunk, selectedLineIndexes: number[] | undefine
   const header = `@@ -${formatRange(hunk.oldStart, oldLines)} +${formatRange(hunk.newStart, newLines)} @@`;
 
   return [header, ...lines.map((line) => line.content)].join('\n');
+}
+
+function buildSelectedLines(lines: DiffLine[], selected: Set<number>): DiffLine[] {
+  const selectedLines: DiffLine[] = [];
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex];
+
+    if (line.type !== 'delete') {
+      selectedLines.push(...selectedPatchLines(line, selected.has(lineIndex)));
+      continue;
+    }
+
+    const deleteBlock: Array<{ line: DiffLine; index: number }> = [];
+    const addBlock: Array<{ line: DiffLine; index: number }> = [];
+    let cursor = lineIndex;
+
+    while (lines[cursor]?.type === 'delete') {
+      deleteBlock.push({ line: lines[cursor], index: cursor });
+      cursor += 1;
+    }
+
+    while (lines[cursor]?.type === 'add') {
+      addBlock.push({ line: lines[cursor], index: cursor });
+      cursor += 1;
+    }
+
+    if (addBlock.length === 0) {
+      selectedLines.push(...selectedPatchLines(line, selected.has(lineIndex)));
+      continue;
+    }
+
+    const pairCount = Math.max(deleteBlock.length, addBlock.length);
+
+    for (let pairIndex = 0; pairIndex < pairCount; pairIndex += 1) {
+      const deleted = deleteBlock[pairIndex];
+      const added = addBlock[pairIndex];
+
+      if (deleted !== undefined) {
+        selectedLines.push(...selectedPatchLines(deleted.line, selected.has(deleted.index)));
+      }
+
+      if (added !== undefined) {
+        selectedLines.push(...selectedPatchLines(added.line, selected.has(added.index)));
+      }
+    }
+
+    lineIndex = cursor - 1;
+  }
+
+  return selectedLines;
 }
 
 function selectedPatchLines(line: DiffLine, selected: boolean): DiffLine[] {
