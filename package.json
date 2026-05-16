@@ -1,0 +1,83 @@
+{
+  "name": "intellij-git-client",
+  "displayName": "IntelliJ Git Client",
+  "description": "IntelliJ-style changelists, diffs, and partial commits for VS Code.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "Source Control"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:intellijGit.changelists"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "intellijGit",
+          "title": "IntelliJ Git",
+          "icon": "media/activity-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "intellijGit": [
+        {
+          "id": "intellijGit.changelists",
+          "name": "Changelists"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "intellijGit.refresh",
+        "title": "IntelliJ Git: Refresh"
+      },
+      {
+        "command": "intellijGit.openDiffReview",
+        "title": "IntelliJ Git: Open Diff Review"
+      },
+      {
+        "command": "intellijGit.commitSelected",
+        "title": "IntelliJ Git: Commit Selected Changes"
+      }
+    ],
+    "configuration": {
+      "title": "IntelliJ Git",
+      "properties": {
+        "intellijGit.gitPath": {
+          "type": "string",
+          "default": "git",
+          "description": "Path to the Git executable."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.57.0",
+    "@preact/preset-vite": "^2.9.0",
+    "@types/node": "^20.12.0",
+    "@types/vscode": "^1.101.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.4.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "preact": "^10.22.0"
+  }
+}
