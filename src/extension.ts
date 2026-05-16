@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ChangelistService } from './changelists/changelistService';
 import { MementoChangelistStore } from './changelists/changelistStore';
+import { CommitService } from './git/commitService';
 import { parseUnifiedDiff } from './git/diffParser';
 import { GitService } from './git/gitService';
 import { RepositoryService } from './git/repositoryService';
@@ -13,12 +14,18 @@ export function activate(context: vscode.ExtensionContext): void {
   const gitPath = vscode.workspace.getConfiguration('intellijGit').get<string>('gitPath', 'git');
   const git = new GitService(gitPath);
   const repositories = new RepositoryService(git);
+  const commits = new CommitService(git);
   const changelists = new ChangelistService(new MementoChangelistStore(context.workspaceState));
-  const diffReviewPanel = new DiffReviewPanel(context.extensionUri);
   const treeProvider = new ChangelistTreeProvider(
     repositories,
     changelists,
     () => vscode.workspace.workspaceFolders
+  );
+  const diffReviewPanel = new DiffReviewPanel(
+    context.extensionUri,
+    commits,
+    async () => treeProvider.refresh(),
+    output
   );
 
   context.subscriptions.push(output);
@@ -37,15 +44,10 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
 
-      const args = target.paths.length > 0 ? ['diff', '--', ...target.paths] : ['diff'];
-      const diff = await git.exec(target.repositoryRoot, args);
-      const files = parseUnifiedDiff(diff.stdout);
+      const loadState = async () => loadDiffReviewState(git, target);
+      const state = await loadState();
 
-      diffReviewPanel.open({
-        title: target.paths.length === 1 ? `Diff: ${target.paths[0]}` : 'Diff Review',
-        repositoryRoot: target.repositoryRoot,
-        files
-      });
+      diffReviewPanel.open(state, loadState);
     }),
     vscode.commands.registerCommand('intellijGit.commitSelected', async () => {
       await vscode.window.showInformationMessage('Commit selected changes is not implemented yet.');
@@ -55,6 +57,20 @@ export function activate(context: vscode.ExtensionContext): void {
   void treeProvider.refresh().catch((error: unknown) => {
     output.appendLine(error instanceof Error ? error.message : String(error));
   });
+}
+
+async function loadDiffReviewState(
+  git: GitService,
+  target: { repositoryRoot: string; paths: string[] }
+) {
+  const args = target.paths.length > 0 ? ['diff', '--', ...target.paths] : ['diff'];
+  const diff = await git.exec(target.repositoryRoot, args);
+
+  return {
+    title: target.paths.length === 1 ? `Diff: ${target.paths[0]}` : 'Diff Review',
+    repositoryRoot: target.repositoryRoot,
+    files: parseUnifiedDiff(diff.stdout)
+  };
 }
 
 export function deactivate(): void {

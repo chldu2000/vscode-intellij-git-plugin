@@ -3,6 +3,7 @@ import type { DiffReviewState } from '../messages';
 import { getVsCodeApi } from '../vscodeApi';
 import { DiffPane } from './DiffPane';
 import { FileNavigator } from './FileNavigator';
+import { canCommitSelectedChanges } from '../commitValidation';
 import {
   getSelectedSummary,
   toggleFile,
@@ -37,7 +38,7 @@ export function DiffReviewApp({ initialState }: DiffReviewAppProps) {
         <div className="toolbarActions">
           <button type="button" onClick={() => vscode.postMessage({ type: 'refresh' })}>Refresh</button>
           <button
-            disabled={selectedSummary.lines === 0 || state.commitMessage.trim().length === 0}
+            disabled={!canCommitSelectedChanges(selectedSummary, state.commitMessage)}
             type="button"
             onClick={() => vscode.postMessage({ type: 'commitSelected' })}
           >

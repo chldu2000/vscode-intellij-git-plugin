@@ -1,25 +1,37 @@
 import * as vscode from 'vscode';
+import type { CommitService } from '../git/commitService';
 import type { DiffFile } from '../git/diffParser';
 import type { DiffReviewState, WebviewToExtensionMessage } from '../webview/messages';
+import { canCommitSelectedChanges } from '../webview/commitValidation';
 import {
   createInitialSelection,
+  getSelectedSummary,
   toggleFile,
   toggleHunk,
   toggleLine
 } from '../webview/selection';
 
+type DiffReviewReload = () => Promise<Omit<DiffReviewState, 'selection' | 'commitMessage'>>;
+
 export class DiffReviewPanel {
   private panel: vscode.WebviewPanel | undefined;
   private state: DiffReviewState | undefined;
+  private reload: DiffReviewReload | undefined;
 
-  public constructor(private readonly extensionUri: vscode.Uri) {}
+  public constructor(
+    private readonly extensionUri: vscode.Uri,
+    private readonly commits: CommitService,
+    private readonly onDidCommit: () => Promise<void>,
+    private readonly output: vscode.OutputChannel
+  ) {}
 
-  public open(state: Omit<DiffReviewState, 'selection' | 'commitMessage'>): void {
+  public open(state: Omit<DiffReviewState, 'selection' | 'commitMessage'>, reload?: DiffReviewReload): void {
     this.state = {
       ...state,
       selection: createInitialSelection(state.files),
       commitMessage: ''
     };
+    this.reload = reload;
 
     if (this.panel === undefined) {
       this.panel = vscode.window.createWebviewPanel(
@@ -81,15 +93,61 @@ export class DiffReviewPanel {
         await this.openSource(this.state.files[message.fileIndex]);
         break;
       case 'commitSelected':
-        await vscode.window.showInformationMessage('Partial commit is not implemented yet.');
+        await this.commitSelected();
         break;
       case 'refresh':
-        await vscode.window.showInformationMessage('Diff refresh is not implemented yet.');
+        await this.reloadDiff();
         break;
       case 'close':
         this.panel?.dispose();
         break;
     }
+  }
+
+  private async commitSelected(): Promise<void> {
+    if (this.state?.repositoryRoot === undefined) {
+      await vscode.window.showErrorMessage('No repository is available for this diff review.');
+      return;
+    }
+
+    if (!canCommitSelectedChanges(getSelectedSummary(this.state.selection), this.state.commitMessage)) {
+      await vscode.window.showErrorMessage('Select changes and enter a commit message before committing.');
+      return;
+    }
+
+    try {
+      const commit = await this.commits.commitSelected(
+        this.state.repositoryRoot,
+        this.state.files,
+        this.state.selection,
+        {
+          message: this.state.commitMessage
+        }
+      );
+      this.output.appendLine(`Committed selected changes: ${commit}`);
+      await this.onDidCommit();
+      await vscode.window.showInformationMessage(`Committed selected changes: ${commit.slice(0, 12)}`);
+      await this.reloadDiff();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.output.appendLine(message);
+      await vscode.window.showErrorMessage(message);
+    }
+  }
+
+  private async reloadDiff(): Promise<void> {
+    if (this.reload === undefined || this.panel === undefined) {
+      return;
+    }
+
+    const next = await this.reload();
+    this.state = {
+      ...next,
+      selection: createInitialSelection(next.files),
+      commitMessage: ''
+    };
+    this.panel.title = next.title;
+    this.panel.webview.html = this.renderHtml(this.panel.webview, this.state);
   }
 
   private async openSource(file: DiffFile | undefined): Promise<void> {
