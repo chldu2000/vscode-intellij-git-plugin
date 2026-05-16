@@ -11,6 +11,7 @@
     "Source Control"
   ],
   "activationEvents": [
+    "*",
     "onStartupFinished",
     "onView:intellijGit.changelists"
   ],
@@ -60,6 +61,7 @@
   },
   "scripts": {
     "compile": "tsc -p . && vite build",
+    "package": "npm run compile && vsce package --allow-star-activation --allow-missing-repository",
     "watch": "tsc -w -p .",
     "test": "vitest run",
     "lint": "eslint src"
