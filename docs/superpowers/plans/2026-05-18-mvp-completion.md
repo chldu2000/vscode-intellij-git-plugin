@@ -179,19 +179,19 @@ Files:
 
 Steps:
 
-- [ ] Locate hooks through `git rev-parse --git-path hooks/<hook>`.
-- [ ] Run executable `pre-commit` with the temporary index environment before writing the tree.
-- [ ] Run executable `commit-msg` against a temporary message file before `commit-tree`.
-- [ ] Capture stdout and stderr into the IntelliJ Git output channel.
-- [ ] Block commit when a hook exits non-zero.
-- [ ] Document unsupported hook nuances if any hook relies on `git commit` internals that the temporary-index path cannot reproduce.
+- [x] Locate hooks through `git rev-parse --git-path hooks/<hook>`.
+- [x] Run executable `pre-commit` with the temporary index environment before writing the tree.
+- [x] Run executable `commit-msg` against a temporary message file before `commit-tree`.
+- [x] Capture stdout and stderr into the IntelliJ Git output channel.
+- [x] Block commit when a hook exits non-zero.
+- [x] Document unsupported hook nuances if any hook relies on `git commit` internals that the temporary-index path cannot reproduce.
 
 Verification:
 
-- [ ] Add tests for passing hooks, failing hooks, and hook output capture.
-- [ ] Run `npm test -- hookService commitService`.
-- [ ] Run `npm run compile`.
-- [ ] Commit: `feat: run git hooks for selected commits`.
+- [x] Add tests for passing hooks, failing hooks, and hook output capture.
+- [x] Run `npm test -- hookService commitService`.
+- [x] Run `npm run compile`.
+- [x] Commit: `feat: run git hooks for selected commits`.
 
 ### Task 8: Clarify Commit Scope Before Mutation
 
