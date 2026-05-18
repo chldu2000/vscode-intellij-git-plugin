@@ -79,16 +79,16 @@ Files:
 
 Steps:
 
-- [ ] Build a `DiffRow` projection that pairs removed and added lines where possible.
-- [ ] Preserve original hunk and line indexes so selection still maps to `DiffSelection`.
-- [ ] Represent context, add-only, delete-only, modified-pair, and empty spacer rows.
-- [ ] Keep binary files outside the split row path.
+- [x] Build a `DiffRow` projection that pairs removed and added lines where possible.
+- [x] Preserve original hunk and line indexes so selection still maps to `DiffSelection`.
+- [x] Represent context, add-only, delete-only, and modified-pair rows.
+- [x] Keep binary files outside the split row path.
 
 Verification:
 
-- [ ] Add tests for simple replacements, multi-line replacements, add-only hunks, delete-only hunks, and context boundaries.
-- [ ] Run `npm test -- diffRows diffParser`.
-- [ ] Commit: `feat: model side by side diff rows`.
+- [x] Add tests for simple replacements, multi-line replacements, add-only hunks, delete-only hunks, and context boundaries.
+- [x] Run `npm test -- diffRows diffParser`.
+- [x] Commit: `feat: model side by side diff rows`.
 
 ### Task 4: Render Split Diff UI
 
