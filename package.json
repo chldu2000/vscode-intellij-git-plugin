@@ -35,6 +35,10 @@
         {
           "id": "intellijGit.log",
           "name": "Git Log"
+        },
+        {
+          "id": "intellijGit.branches",
+          "name": "Branches"
         }
       ]
     },
@@ -62,6 +66,18 @@
       {
         "command": "intellijGit.copyCommitHash",
         "title": "IntelliJ Git: Copy Commit Hash"
+      },
+      {
+        "command": "intellijGit.refreshBranches",
+        "title": "IntelliJ Git: Refresh Branches"
+      },
+      {
+        "command": "intellijGit.checkoutBranch",
+        "title": "IntelliJ Git: Checkout Branch"
+      },
+      {
+        "command": "intellijGit.forceCheckoutBranch",
+        "title": "IntelliJ Git: Force Checkout Branch"
       }
     ],
     "configuration": {
