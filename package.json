@@ -31,6 +31,10 @@
         {
           "id": "intellijGit.changelists",
           "name": "Changelists"
+        },
+        {
+          "id": "intellijGit.log",
+          "name": "Git Log"
         }
       ]
     },
@@ -46,6 +50,18 @@
       {
         "command": "intellijGit.commitSelected",
         "title": "IntelliJ Git: Commit Selected Changes"
+      },
+      {
+        "command": "intellijGit.refreshLog",
+        "title": "IntelliJ Git: Refresh Log"
+      },
+      {
+        "command": "intellijGit.openCommitDiff",
+        "title": "IntelliJ Git: Open Commit Diff"
+      },
+      {
+        "command": "intellijGit.copyCommitHash",
+        "title": "IntelliJ Git: Copy Commit Hash"
       }
     ],
     "configuration": {

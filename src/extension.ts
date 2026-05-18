@@ -4,10 +4,13 @@ import { MementoChangelistStore } from './changelists/changelistStore';
 import { CommitService } from './git/commitService';
 import { parseUnifiedDiff } from './git/diffParser';
 import { GitService } from './git/gitService';
+import { LogService } from './git/logService';
 import { RepositoryService } from './git/repositoryService';
 import { DiffReviewPanel } from './views/diffReviewPanel';
 import { ChangelistTreeProvider } from './views/changelistTreeProvider';
 import type { ChangelistTreeNode } from './views/changelistTreeModel';
+import { LogViewProvider } from './views/logViewProvider';
+import type { LogTreeNode } from './views/logTreeModel';
 
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel('IntelliJ Git');
@@ -15,10 +18,16 @@ export function activate(context: vscode.ExtensionContext): void {
   const git = new GitService(gitPath);
   const repositories = new RepositoryService(git);
   const commits = new CommitService(git);
+  const logs = new LogService(git);
   const changelists = new ChangelistService(new MementoChangelistStore(context.workspaceState));
   const treeProvider = new ChangelistTreeProvider(
     repositories,
     changelists,
+    () => vscode.workspace.workspaceFolders
+  );
+  const logProvider = new LogViewProvider(
+    repositories,
+    logs,
     () => vscode.workspace.workspaceFolders
   );
   const diffReviewPanel = new DiffReviewPanel(
@@ -30,6 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(output);
   context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.changelists', treeProvider));
+  context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.log', logProvider));
 
   context.subscriptions.push(
     vscode.commands.registerCommand('intellijGit.refresh', async () => {
@@ -51,10 +61,45 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand('intellijGit.commitSelected', async () => {
       await vscode.window.showInformationMessage('Commit selected changes is not implemented yet.');
+    }),
+    vscode.commands.registerCommand('intellijGit.refreshLog', async () => {
+      output.appendLine('Log refresh requested.');
+      await logProvider.refresh();
+    }),
+    vscode.commands.registerCommand('intellijGit.openCommitDiff', async (node?: LogTreeNode) => {
+      if (node === undefined || node.kind === 'repository') {
+        return;
+      }
+
+      const paths = node.kind === 'file' ? [node.path] : [];
+      const diff = await git.exec(node.repositoryRoot, [
+        'show',
+        '--format=',
+        '--find-renames',
+        node.hash,
+        '--',
+        ...paths
+      ]);
+      diffReviewPanel.open({
+        title: node.kind === 'file' ? `Commit Diff: ${node.path}` : `Commit Diff: ${node.hash.slice(0, 12)}`,
+        repositoryRoot: node.repositoryRoot,
+        files: parseUnifiedDiff(diff.stdout)
+      });
+    }),
+    vscode.commands.registerCommand('intellijGit.copyCommitHash', async (node?: LogTreeNode) => {
+      if (node === undefined || node.kind === 'repository') {
+        return;
+      }
+
+      await vscode.env.clipboard.writeText(node.hash);
+      await vscode.window.showInformationMessage(`Copied ${node.hash.slice(0, 12)}`);
     })
   );
 
   void treeProvider.refresh().catch((error: unknown) => {
+    output.appendLine(error instanceof Error ? error.message : String(error));
+  });
+  void logProvider.refresh().catch((error: unknown) => {
     output.appendLine(error instanceof Error ? error.message : String(error));
   });
 }
