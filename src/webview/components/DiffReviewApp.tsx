@@ -19,6 +19,7 @@ export function DiffReviewApp({ initialState }: DiffReviewAppProps) {
   const vscode = getVsCodeApi();
   const [state, setState] = useState(initialState);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
+  const [diffMode, setDiffMode] = useState<'split' | 'unified'>('split');
   const selectedSummary = useMemo(() => getSelectedSummary(state.selection), [state.selection]);
 
   const updateState = (nextState: DiffReviewState): void => {
@@ -36,6 +37,22 @@ export function DiffReviewApp({ initialState }: DiffReviewAppProps) {
           </span>
         </div>
         <div className="toolbarActions">
+          <div className="segmentedControl" aria-label="Diff layout">
+            <button
+              aria-pressed={diffMode === 'split'}
+              type="button"
+              onClick={() => setDiffMode('split')}
+            >
+              Side-by-side
+            </button>
+            <button
+              aria-pressed={diffMode === 'unified'}
+              type="button"
+              onClick={() => setDiffMode('unified')}
+            >
+              Unified
+            </button>
+          </div>
           <button type="button" onClick={() => vscode.postMessage({ type: 'refresh' })}>Refresh</button>
           <button
             disabled={!canCommitSelectedChanges(selectedSummary, state.commitMessage)}
@@ -135,6 +152,7 @@ export function DiffReviewApp({ initialState }: DiffReviewAppProps) {
           file={state.files[activeFileIndex]}
           fileIndex={activeFileIndex}
           selection={state.selection}
+          viewMode={diffMode}
           onToggleHunk={(fileIndex, hunkIndex, selected) => {
             const file = state.files[fileIndex];
             const selection = toggleHunk(state.selection, file, hunkIndex, selected);

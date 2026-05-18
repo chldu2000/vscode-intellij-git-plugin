@@ -43,6 +43,7 @@ input {
 }
 
 .toolbarActions {
+  align-items: center;
   display: flex;
   gap: 8px;
 }
@@ -59,6 +60,24 @@ input {
 .toolbarActions button:disabled {
   cursor: default;
   opacity: 0.45;
+}
+
+.segmentedControl {
+  border: 1px solid var(--vscode-button-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.segmentedControl button {
+  background: var(--vscode-button-secondaryBackground);
+  border-radius: 0;
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.segmentedControl button[aria-pressed="true"] {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
 }
 
 .commitBar {
@@ -227,4 +246,43 @@ input {
 .diffLine code {
   overflow-x: auto;
   padding: 2px 8px;
+}
+
+.splitLines {
+  display: grid;
+}
+
+.splitRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 22px;
+}
+
+.splitCell {
+  display: grid;
+  grid-template-columns: 28px 48px minmax(0, 1fr);
+  min-width: 0;
+}
+
+.splitCell.old {
+  border-right: 1px solid var(--vscode-panel-border);
+}
+
+.splitCell.add {
+  background: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+.splitCell.delete {
+  background: var(--vscode-diffEditor-removedTextBackground);
+}
+
+.splitCell.empty {
+  background: var(--vscode-diffEditor-unchangedRegionBackground);
+}
+
+.splitCell code {
+  font-family: var(--vscode-editor-font-family);
+  overflow-x: auto;
+  padding: 2px 8px;
+  white-space: pre;
 }

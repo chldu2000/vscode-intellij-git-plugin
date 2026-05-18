@@ -1,4 +1,5 @@
 import type { DiffFile } from '../../git/diffParser';
+import { buildSplitDiffRows, type SplitDiffCell } from '../diffRows';
 import {
   fileKey,
   getHunkSelectionState,
@@ -10,6 +11,7 @@ interface DiffPaneProps {
   file: DiffFile | undefined;
   fileIndex: number;
   selection: DiffSelection;
+  viewMode: 'split' | 'unified';
   onToggleHunk(fileIndex: number, hunkIndex: number, selected: boolean): void;
   onToggleLine(fileIndex: number, hunkIndex: number, lineIndex: number, selected: boolean): void;
 }
@@ -18,6 +20,7 @@ export function DiffPane({
   file,
   fileIndex,
   selection,
+  viewMode,
   onToggleHunk,
   onToggleLine
 }: DiffPaneProps) {
@@ -57,37 +60,112 @@ export function DiffPane({
               <code>{hunk.header}</code>
             </header>
 
-            <div className="hunkLines" role="table">
-              {hunk.lines.map((line, lineIndex) => {
-                const selectable = line.type !== 'context';
+            {viewMode === 'split' ? (
+              <div className="splitLines" role="table">
+                {buildSplitDiffRows(hunk).map((row, rowIndex) => (
+                  <div className={`splitRow ${row.kind}`} key={`${hunk.header}:${rowIndex}`}>
+                    <SplitCell
+                      cell={row.old}
+                      file={file}
+                      fileIndex={fileIndex}
+                      hunkIndex={hunkIndex}
+                      side="old"
+                      selection={selection}
+                      onToggleLine={onToggleLine}
+                    />
+                    <SplitCell
+                      cell={row.new}
+                      file={file}
+                      fileIndex={fileIndex}
+                      hunkIndex={hunkIndex}
+                      side="new"
+                      selection={selection}
+                      onToggleLine={onToggleLine}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="hunkLines" role="table">
+                {hunk.lines.map((line, lineIndex) => {
+                  const selectable = line.type !== 'context';
 
-                return (
-                  <label className={`diffLine ${line.type}`} key={`${line.type}:${lineIndex}`}>
-                    <span className="lineSelect">
-                      {selectable ? (
-                        <input
-                          aria-label={`Select line ${lineIndex + 1}`}
-                          checked={isLineSelected(selection, file, hunkIndex, lineIndex)}
-                          type="checkbox"
-                          onChange={(event) => onToggleLine(
-                            fileIndex,
-                            hunkIndex,
-                            lineIndex,
-                            event.currentTarget.checked
-                          )}
-                        />
-                      ) : null}
-                    </span>
-                    <span className="lineNo">{line.oldLine ?? ''}</span>
-                    <span className="lineNo">{line.newLine ?? ''}</span>
-                    <code>{line.content}</code>
-                  </label>
-                );
-              })}
-            </div>
+                  return (
+                    <label className={`diffLine ${line.type}`} key={`${line.type}:${lineIndex}`}>
+                      <span className="lineSelect">
+                        {selectable ? (
+                          <input
+                            aria-label={`Select line ${lineIndex + 1}`}
+                            checked={isLineSelected(selection, file, hunkIndex, lineIndex)}
+                            type="checkbox"
+                            onChange={(event) => onToggleLine(
+                              fileIndex,
+                              hunkIndex,
+                              lineIndex,
+                              event.currentTarget.checked
+                            )}
+                          />
+                        ) : null}
+                      </span>
+                      <span className="lineNo">{line.oldLine ?? ''}</span>
+                      <span className="lineNo">{line.newLine ?? ''}</span>
+                      <code>{line.content}</code>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </section>
         );
       })}
     </main>
+  );
+}
+
+interface SplitCellProps {
+  cell: SplitDiffCell | undefined;
+  file: DiffFile;
+  fileIndex: number;
+  hunkIndex: number;
+  side: 'old' | 'new';
+  selection: DiffSelection;
+  onToggleLine(fileIndex: number, hunkIndex: number, lineIndex: number, selected: boolean): void;
+}
+
+function SplitCell({
+  cell,
+  file,
+  fileIndex,
+  hunkIndex,
+  side,
+  selection,
+  onToggleLine
+}: SplitCellProps) {
+  if (cell === undefined) {
+    return <div className={`splitCell empty ${side}`} />;
+  }
+
+  const selectable = cell.type !== 'context';
+
+  return (
+    <label className={`splitCell ${side} ${cell.type}`}>
+      <span className="lineSelect">
+        {selectable ? (
+          <input
+            aria-label={`Select ${side} line ${cell.lineIndex + 1}`}
+            checked={isLineSelected(selection, file, hunkIndex, cell.lineIndex)}
+            type="checkbox"
+            onChange={(event) => onToggleLine(
+              fileIndex,
+              hunkIndex,
+              cell.lineIndex,
+              event.currentTarget.checked
+            )}
+          />
+        ) : null}
+      </span>
+      <span className="lineNo">{cell.lineNumber ?? ''}</span>
+      <code>{cell.content}</code>
+    </label>
   );
 }
