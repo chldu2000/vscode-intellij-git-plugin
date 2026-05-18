@@ -178,6 +178,18 @@ describe('CommitService', () => {
       await rm(remote, { recursive: true, force: true });
     }
   });
+
+  it('blocks selected commits during unsupported repository operations', async () => {
+    await writeFile(path.join(repo, '.git', 'MERGE_HEAD'), `${'0'.repeat(40)}\n`, 'utf8');
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+    const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+    const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+    await expect(commits.commitSelected(repo, files, selection, {
+      message: 'blocked commit',
+      env: authorEnv().env
+    })).rejects.toThrow('merge is in progress');
+  });
 });
 
 function authorEnv() {

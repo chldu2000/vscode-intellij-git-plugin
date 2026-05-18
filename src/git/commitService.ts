@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { DiffFile } from './diffParser';
 import type { GitService } from './gitService';
+import { detectRepositoryOperationState } from './repositoryState';
 import { buildSelectedPatch } from './patchBuilder';
 import type { DiffSelection } from '../shared/selection';
 
@@ -121,6 +122,12 @@ export class CommitService {
   }
 
   private async ensureSupportedRepositoryState(repositoryRoot: string): Promise<void> {
+    const operationState = await detectRepositoryOperationState(this.git, repositoryRoot);
+
+    if (!operationState.supported) {
+      throw new Error(operationState.reason ?? 'Cannot commit selected changes in the current repository state.');
+    }
+
     const unresolved = await this.git.exec(repositoryRoot, ['diff', '--name-only', '--diff-filter=U']);
 
     if (unresolved.stdout.trim().length > 0) {
