@@ -7,7 +7,7 @@ import {
   toggleFile,
   toggleHunk,
   toggleLine
-} from '../webview/selection';
+} from '../shared/selection';
 
 describe('diff review selection', () => {
   it('toggles files and updates selected summary', () => {

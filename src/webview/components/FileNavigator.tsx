@@ -1,5 +1,5 @@
 import type { DiffFile } from '../../git/diffParser';
-import { fileKey, getHunkSelectionState, type DiffSelection } from '../selection';
+import { fileKey, getHunkSelectionState, type DiffSelection } from '../../shared/selection';
 
 interface FileNavigatorProps {
   files: DiffFile[];

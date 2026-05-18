@@ -1,6 +1,6 @@
 import type { DiffFile, DiffHunk, DiffLine } from './diffParser';
-import type { DiffSelection } from '../webview/selection';
-import { fileKey } from '../webview/selection';
+import type { DiffSelection } from '../shared/selection';
+import { fileKey } from '../shared/selection';
 
 export function buildSelectedPatch(files: DiffFile[], selection: DiffSelection): string {
   const patches = files

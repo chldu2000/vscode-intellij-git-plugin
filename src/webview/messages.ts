@@ -1,5 +1,5 @@
 import type { DiffFile } from '../git/diffParser';
-import type { DiffSelection } from './selection';
+import type { DiffSelection } from '../shared/selection';
 
 export interface DiffReviewState {
   title: string;

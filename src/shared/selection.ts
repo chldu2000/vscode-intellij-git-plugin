@@ -31,6 +31,7 @@ export function toggleFile(selection: DiffSelection, file: DiffFile, selected: b
 
   next.selectedLinesByFile[key] = {};
   file.hunks.forEach((hunk, hunkIndex) => {
+    void hunk;
     next.selectedLinesByFile[key][hunkIndex] = selectableLineIndexes(file, hunkIndex);
   });
 

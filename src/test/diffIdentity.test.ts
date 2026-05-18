@@ -7,7 +7,7 @@ import {
 import {
   createInitialSelection,
   toggleHunk
-} from '../webview/selection';
+} from '../shared/selection';
 
 describe('diff identity', () => {
   it('hashes path, index line, and hunk header', () => {

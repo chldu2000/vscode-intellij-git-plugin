@@ -4,7 +4,7 @@ import {
   getHunkSelectionState,
   isLineSelected,
   type DiffSelection
-} from '../selection';
+} from '../../shared/selection';
 
 interface DiffPaneProps {
   file: DiffFile | undefined;

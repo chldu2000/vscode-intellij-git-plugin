@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canCommitSelectedChanges } from '../webview/commitValidation';
+import { canCommitSelectedChanges } from '../shared/commitValidation';
 
 describe('canCommitSelectedChanges', () => {
   it('requires selected lines and a non-empty commit message', () => {

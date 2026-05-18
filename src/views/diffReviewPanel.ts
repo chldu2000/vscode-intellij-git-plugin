@@ -3,14 +3,14 @@ import type { CommitService } from '../git/commitService';
 import { invalidateStaleSelections } from '../git/diffIdentity';
 import type { DiffFile } from '../git/diffParser';
 import type { DiffReviewState, WebviewToExtensionMessage } from '../webview/messages';
-import { canCommitSelectedChanges } from '../webview/commitValidation';
+import { canCommitSelectedChanges } from '../shared/commitValidation';
 import {
   createInitialSelection,
   getSelectedSummary,
   toggleFile,
   toggleHunk,
   toggleLine
-} from '../webview/selection';
+} from '../shared/selection';
 
 type DiffReviewPanelInput = Omit<DiffReviewState, 'selection' | 'commitMessage' | 'commitOptions'>;
 type DiffReviewReload = () => Promise<DiffReviewPanelInput>;

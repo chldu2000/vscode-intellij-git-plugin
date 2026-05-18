@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { DiffFile } from './diffParser';
-import type { DiffSelection } from '../webview/selection';
-import { fileKey } from '../webview/selection';
+import type { DiffSelection } from '../shared/selection';
+import { fileKey } from '../shared/selection';
 
 export interface StaleSelection {
   fileKey: string;

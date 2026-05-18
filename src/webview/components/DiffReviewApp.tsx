@@ -3,13 +3,13 @@ import type { DiffReviewState } from '../messages';
 import { getVsCodeApi } from '../vscodeApi';
 import { DiffPane } from './DiffPane';
 import { FileNavigator } from './FileNavigator';
-import { canCommitSelectedChanges } from '../commitValidation';
+import { canCommitSelectedChanges } from '../../shared/commitValidation';
 import {
   getSelectedSummary,
   toggleFile,
   toggleHunk,
   toggleLine
-} from '../selection';
+} from '../../shared/selection';
 
 interface DiffReviewAppProps {
   initialState: DiffReviewState;

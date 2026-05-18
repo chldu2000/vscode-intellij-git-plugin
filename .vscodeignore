@@ -4,6 +4,7 @@
 !dist/extension.js
 !dist/changelists/**
 !dist/git/**
+!dist/shared/**
 !dist/views/**
 !dist/webview/main.js
 !dist/webview/styles.css

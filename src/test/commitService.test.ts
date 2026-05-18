@@ -10,7 +10,7 @@ import {
   toggleFile,
   toggleHunk,
   toggleLine
-} from '../webview/selection';
+} from '../shared/selection';
 
 describe('CommitService', () => {
   let repo: string;

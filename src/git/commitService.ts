@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { DiffFile } from './diffParser';
 import type { GitService } from './gitService';
 import { buildSelectedPatch } from './patchBuilder';
-import type { DiffSelection } from '../webview/selection';
+import type { DiffSelection } from '../shared/selection';
 
 export interface CommitSelectedOptions {
   message: string;
