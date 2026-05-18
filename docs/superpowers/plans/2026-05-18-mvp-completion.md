@@ -20,24 +20,24 @@ Files:
 
 Steps:
 
-- [ ] Add commands:
+- [x] Add commands:
   - `intellijGit.createChangelist`
   - `intellijGit.renameChangelist`
   - `intellijGit.deleteChangelist`
   - `intellijGit.setActiveChangelist`
   - `intellijGit.moveFilesToChangelist`
-- [ ] Add `view/item/context` menu entries for repository, changelist group, and file nodes.
-- [ ] Prompt for changelist names with `showInputBox`; validate empty names and duplicate names.
-- [ ] Prompt for destination changelist with `showQuickPick`.
-- [ ] Refresh changelists and diff review after each successful operation.
-- [ ] Block deletion of the default changelist and move deleted assignments back to `Changes`.
+- [x] Add `view/item/context` menu entries for repository, changelist group, and file nodes.
+- [x] Prompt for changelist names with `showInputBox`; validate empty names and duplicate names.
+- [x] Prompt for destination changelist with `showQuickPick`.
+- [x] Refresh changelists after each successful operation.
+- [x] Block deletion of the default changelist and move deleted assignments back to `Changes`.
 
 Verification:
 
-- [ ] Add or update unit tests for tree node context values and changelist operations.
-- [ ] Run `npm test -- changelist`.
-- [ ] Run `npm run compile`.
-- [ ] Commit: `feat: add changelist management commands`.
+- [x] Add or update unit tests for tree node context values and changelist operations.
+- [x] Run `npm test -- changelist`.
+- [x] Run `npm run compile`.
+- [x] Commit: `feat: add changelist management commands`.
 
 ### Task 2: Make Tree Checkboxes Drive Commit Selection
 
@@ -52,20 +52,20 @@ Files:
 
 Steps:
 
-- [ ] Add a selection store keyed by repository root and normalized path.
-- [ ] Register `TreeView.onDidChangeCheckboxState` instead of only using `registerTreeDataProvider`.
-- [ ] When a file checkbox changes, update file selection.
-- [ ] When a changelist checkbox changes, apply the state to all eligible child files.
-- [ ] Render checked, unchecked, and partial states for changelist groups.
-- [ ] Feed tree-selected files into `openDiffReview` and `commitSelected`.
-- [ ] Clear stale file selections when status no longer contains the path.
+- [x] Add a selection store keyed by repository root and normalized path.
+- [x] Register `TreeView.onDidChangeCheckboxState` instead of only using `registerTreeDataProvider`.
+- [x] When a file checkbox changes, update file selection.
+- [x] When a changelist checkbox changes, apply the state to all eligible child files.
+- [x] Render checked, unchecked, and partial states for changelist groups.
+- [x] Feed tree-selected files into `openDiffReview` and `commitSelected`.
+- [x] Clear stale file selections when status no longer contains the path.
 
 Verification:
 
-- [ ] Add tests for file selection, group selection, partial group state, and stale cleanup.
-- [ ] Run `npm test -- changelist`.
-- [ ] Run `npm run compile`.
-- [ ] Commit: `feat: connect changelist checkboxes to selection`.
+- [x] Add tests for file selection, group selection, partial group state, and stale cleanup.
+- [x] Run `npm test -- changelist`.
+- [x] Run `npm run compile`.
+- [x] Commit: `feat: connect changelist checkboxes to selection`.
 
 ## Milestone M7: IntelliJ-Style Split Diff
 
