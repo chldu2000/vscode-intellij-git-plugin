@@ -102,19 +102,19 @@ Files:
 
 Steps:
 
-- [ ] Add a toolbar toggle for `Side-by-side` and `Unified`.
-- [ ] Default modified files to side-by-side mode.
-- [ ] Render old and new columns with stable line-number gutters and selectable changed lines.
-- [ ] Keep hunk checkboxes visible above each hunk.
-- [ ] Render added, deleted, renamed, and binary files with clear mode-specific empty states.
-- [ ] Ensure keyboard focus and labels remain accessible.
+- [x] Add a toolbar toggle for `Side-by-side` and `Unified`.
+- [x] Default modified files to side-by-side mode.
+- [x] Render old and new columns with stable line-number gutters and selectable changed lines.
+- [x] Keep hunk checkboxes visible above each hunk.
+- [x] Render added, deleted, renamed, and binary files with clear mode-specific empty states.
+- [x] Ensure keyboard focus and labels remain accessible.
 
 Verification:
 
-- [ ] Run `npm test -- diffReviewSelection`.
-- [ ] Run `npm run compile`.
+- [x] Run `npm test -- diffReviewSelection`.
+- [x] Run `npm run compile`.
 - [ ] Manually open the webview in Extension Development Host and verify no overlapping text at narrow and wide widths.
-- [ ] Commit: `feat: render side by side diff review`.
+- [x] Commit: `feat: render side by side diff review`.
 
 ## Milestone M8: Commit Safety Gates
 
