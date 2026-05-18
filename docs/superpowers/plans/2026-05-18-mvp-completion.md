@@ -153,17 +153,17 @@ Files:
 
 Steps:
 
-- [ ] Block partial selection for binary files before patch building.
-- [ ] Detect staged files with `git diff --cached --name-only`.
-- [ ] Detect overlap between staged paths and selected paths.
-- [ ] Block overlapping staged changes with a clear message until staging-area support exists.
-- [ ] Add output-channel guidance telling users how to recover or retry.
+- [x] Block partial selection for binary files before patch building.
+- [x] Detect staged files with `git diff --cached --name-only`.
+- [x] Detect overlap between staged paths and selected paths.
+- [x] Block overlapping staged changes with a clear message until staging-area support exists.
+- [x] Add commit failure guidance telling users how to recover or retry.
 
 Verification:
 
-- [ ] Add tests for binary selection and staged overlap.
-- [ ] Run `npm test -- commitService patchBuilder`.
-- [ ] Commit: `feat: block unsupported partial commit states`.
+- [x] Add tests for binary selection and staged overlap.
+- [x] Run `npm test -- commitService patchBuilder`.
+- [x] Commit: `feat: block unsupported partial commit states`.
 
 ## Milestone M9: Hook-Aware Commit UX
 
