@@ -1,10 +1,11 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CommitService } from '../git/commitService';
 import { parseUnifiedDiff } from '../git/diffParser';
 import { GitService } from '../git/gitService';
+import { HookService } from '../git/hookService';
 import {
   createInitialSelection,
   toggleFile,
@@ -15,12 +16,14 @@ import {
 describe('CommitService', () => {
   let repo: string;
   let git: GitService;
+  let hookOutput: string[];
   let commits: CommitService;
 
   beforeEach(async () => {
     repo = await mkdtemp(path.join(tmpdir(), 'intellij-git-client-commit-'));
     git = new GitService('git');
-    commits = new CommitService(git);
+    hookOutput = [];
+    commits = new CommitService(git, new HookService(git, (line) => hookOutput.push(line)));
     await git.exec(repo, ['init']);
     await writeFile(path.join(repo, 'file.txt'), 'one\ntwo\nthree\nfour\n', 'utf8');
     await writeFile(path.join(repo, 'other.txt'), 'alpha\n', 'utf8');
@@ -222,6 +225,59 @@ describe('CommitService', () => {
       env: authorEnv().env
     })).rejects.toThrow('staged changes overlap: file.txt');
   });
+
+  it('runs pre-commit and commit-msg hooks with selected commits', async () => {
+    await writeHook('pre-commit', [
+      '#!/bin/sh',
+      'echo pre-commit-ran',
+      'test -n "$GIT_INDEX_FILE"'
+    ]);
+    await writeHook('commit-msg', [
+      '#!/bin/sh',
+      'echo commit-msg-ran',
+      'printf "\\nHook-Trailer: yes\\n" >> "$1"'
+    ]);
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+    const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+    const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+    await commits.commitSelected(repo, files, selection, {
+      message: 'commit with hooks',
+      env: authorEnv().env
+    });
+
+    expect(hookOutput).toContain('pre-commit-ran');
+    expect(hookOutput).toContain('commit-msg-ran');
+    expect((await git.exec(repo, ['log', '-1', '--format=%B'])).stdout).toContain('Hook-Trailer: yes');
+  });
+
+  it('blocks selected commits when a hook fails', async () => {
+    await writeHook('pre-commit', [
+      '#!/bin/sh',
+      'echo hook-rejected >&2',
+      'exit 1'
+    ]);
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+    const headBefore = (await git.exec(repo, ['rev-parse', 'HEAD'])).stdout.trim();
+    const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+    const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+    await expect(commits.commitSelected(repo, files, selection, {
+      message: 'blocked by hook',
+      env: authorEnv().env
+    })).rejects.toThrow('Git hook pre-commit failed');
+
+    expect(hookOutput).toContain('hook-rejected');
+    expect((await git.exec(repo, ['rev-parse', 'HEAD'])).stdout.trim()).toBe(headBefore);
+  });
+
+  async function writeHook(name: string, lines: string[]): Promise<void> {
+    const hooksDir = path.join(repo, '.git', 'hooks');
+    await mkdir(hooksDir, { recursive: true });
+    const hookPath = path.join(hooksDir, name);
+    await writeFile(hookPath, `${lines.join('\n')}\n`, 'utf8');
+    await chmod(hookPath, 0o755);
+  }
 });
 
 function authorEnv() {

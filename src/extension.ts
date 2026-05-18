@@ -3,6 +3,7 @@ import { ChangelistService } from './changelists/changelistService';
 import { MementoChangelistStore } from './changelists/changelistStore';
 import { BranchService } from './git/branchService';
 import { CommitService } from './git/commitService';
+import { HookService } from './git/hookService';
 import { parseUnifiedDiff } from './git/diffParser';
 import { GitService } from './git/gitService';
 import { LogService } from './git/logService';
@@ -24,7 +25,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const git = new GitService(gitPath);
   const repositories = new RepositoryService(git);
   const branches = new BranchService(git);
-  const commits = new CommitService(git);
+  const hooks = new HookService(git, (line) => output.appendLine(line));
+  const commits = new CommitService(git, hooks);
   const logs = new LogService(git);
   const stashes = new StashService(git);
   const shelves = new ShelfService(git, context.globalStorageUri.fsPath);

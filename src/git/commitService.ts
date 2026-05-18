@@ -1,8 +1,9 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { DiffFile } from './diffParser';
 import type { GitService } from './gitService';
+import type { HookService } from './hookService';
 import { detectRepositoryOperationState } from './repositoryState';
 import { buildSelectedPatch } from './patchBuilder';
 import { fileKey, getSelectedFileKeys, hasSelectedFileEntry, type DiffSelection } from '../shared/selection';
@@ -20,7 +21,10 @@ export interface CommitSelectedOptions {
 }
 
 export class CommitService {
-  public constructor(private readonly git: GitService) {}
+  public constructor(
+    private readonly git: GitService,
+    private readonly hooks?: HookService
+  ) {}
 
   public async commitSelected(
     repositoryRoot: string,
@@ -44,6 +48,7 @@ export class CommitService {
     const expectedOldHead = (await this.git.exec(repositoryRoot, ['rev-parse', 'HEAD'])).stdout.trim();
     const tempDir = await mkdtemp(path.join(tmpdir(), 'intellij-git-index-'));
     const tempIndex = path.join(tempDir, 'index');
+    const messagePath = path.join(tempDir, 'COMMIT_EDITMSG');
     const tempEnv = {
       ...options.env,
       GIT_INDEX_FILE: tempIndex
@@ -60,6 +65,15 @@ export class CommitService {
         input: patch
       });
 
+      await this.hooks?.runHook(repositoryRoot, 'pre-commit', { env: tempEnv });
+
+      const initialMessage = this.commitMessage(options);
+      await writeFile(messagePath, `${initialMessage}\n`, 'utf8');
+      await this.hooks?.runHook(repositoryRoot, 'commit-msg', {
+        env: tempEnv,
+        args: [messagePath]
+      });
+      const finalMessage = (await readFile(messagePath, 'utf8')).trimEnd();
       const tree = (await this.git.exec(repositoryRoot, ['write-tree'], { env: tempEnv })).stdout.trim();
       const commit = (await this.git.exec(repositoryRoot, [
         'commit-tree',
@@ -67,7 +81,7 @@ export class CommitService {
         ...await this.parentArgs(repositoryRoot, options.amend === true)
       ], {
         env: this.commitEnv(options),
-        input: `${this.commitMessage(options)}\n`
+        input: `${finalMessage}\n`
       })).stdout.trim();
 
       await this.git.exec(repositoryRoot, ['update-ref', `refs/heads/${branch}`, commit, expectedOldHead]);
