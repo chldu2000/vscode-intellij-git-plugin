@@ -20,6 +20,18 @@ export function createInitialSelection(files: DiffFile[]): DiffSelection {
   };
 }
 
+export function createSelectionForFiles(files: DiffFile[], paths: readonly string[]): DiffSelection {
+  const selectedPaths = new Set(paths);
+
+  return files.reduce<DiffSelection>((selection, file) => {
+    if (!selectedPaths.has(fileKey(file))) {
+      return selection;
+    }
+
+    return toggleFile(selection, file, true);
+  }, createInitialSelection(files));
+}
+
 export function toggleFile(selection: DiffSelection, file: DiffFile, selected: boolean): DiffSelection {
   const next = cloneSelection(selection);
   const key = fileKey(file);

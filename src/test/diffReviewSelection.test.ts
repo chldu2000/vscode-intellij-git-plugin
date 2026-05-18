@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DiffFile } from '../git/diffParser';
 import {
   createInitialSelection,
+  createSelectionForFiles,
   getHunkSelectionState,
   getSelectedSummary,
   toggleFile,
@@ -46,6 +47,17 @@ describe('diff review selection', () => {
     selection = toggleHunk(selection, files[0], 0, false);
 
     expect(getHunkSelectionState(selection, files[0], 0)).toBe('unselected');
+  });
+
+  it('creates initial selection for checked files', () => {
+    const files = fixtureFiles();
+    const selection = createSelectionForFiles(files, ['src/a.ts']);
+
+    expect(getSelectedSummary(selection)).toEqual({
+      files: 1,
+      hunks: 2,
+      lines: 3
+    });
   });
 });
 

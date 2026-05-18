@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { ChangelistService } from '../changelists/changelistService';
 import type { RepositoryService } from '../git/repositoryService';
 import { buildChangelistTree, type ChangelistTreeNode, type RepositoryNode } from './changelistTreeModel';
+import type { ChangelistSelectionStore } from './changelistSelectionStore';
 
 export class ChangelistTreeProvider implements vscode.TreeDataProvider<ChangelistTreeNode> {
   private readonly changeEmitter = new vscode.EventEmitter<ChangelistTreeNode | undefined | null | void>();
@@ -12,6 +13,7 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
   public constructor(
     private readonly repositories: RepositoryService,
     private readonly changelists: ChangelistService,
+    private readonly selectionStore: ChangelistSelectionStore,
     private readonly getWorkspaceFolders: () => readonly vscode.WorkspaceFolder[] | undefined
   ) {}
 
@@ -31,6 +33,7 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
     );
 
     this.tree = buildChangelistTree(groupedRepositories);
+    this.selectionStore.prune(this.tree);
     this.changeEmitter.fire();
   }
 
@@ -42,7 +45,9 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
     if (element.kind === 'file') {
       item.description = element.statusKind;
       item.resourceUri = vscode.Uri.file(`${element.repositoryRoot}/${element.path}`);
-      item.checkboxState = vscode.TreeItemCheckboxState.Unchecked;
+      item.checkboxState = this.selectionStore.isSelected(element.repositoryRoot, element.path)
+        ? vscode.TreeItemCheckboxState.Checked
+        : vscode.TreeItemCheckboxState.Unchecked;
       item.command = {
         command: 'intellijGit.openDiffReview',
         title: 'Open Diff Review',
@@ -51,8 +56,11 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
     }
 
     if (element.kind === 'group') {
-      item.description = element.active ? `${element.children.length} active` : `${element.children.length}`;
-      item.checkboxState = vscode.TreeItemCheckboxState.Unchecked;
+      const groupSelection = this.selectionStore.summaryForGroup(element);
+      item.description = groupDescription(element.active, element.children.length, groupSelection);
+      item.checkboxState = groupSelection === 'checked'
+        ? vscode.TreeItemCheckboxState.Checked
+        : vscode.TreeItemCheckboxState.Unchecked;
     }
 
     return item;
@@ -69,6 +77,16 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
 
     return [];
   }
+
+  public handleCheckboxChange(event: vscode.TreeCheckboxChangeEvent<ChangelistTreeNode>): void {
+    for (const [node, state] of event.items) {
+      if (node.kind === 'file' || node.kind === 'group') {
+        this.selectionStore.applyTreeCheckboxChange(node, state === vscode.TreeItemCheckboxState.Checked);
+      }
+    }
+
+    this.changeEmitter.fire();
+  }
 }
 
 function contextValueFor(element: ChangelistTreeNode): string {
@@ -77,6 +95,20 @@ function contextValueFor(element: ChangelistTreeNode): string {
   }
 
   return element.kind;
+}
+
+function groupDescription(active: boolean, count: number, selection: string): string {
+  const parts = [String(count)];
+
+  if (active) {
+    parts.push('active');
+  }
+
+  if (selection === 'partial') {
+    parts.push('partial');
+  }
+
+  return parts.join(' ');
 }
 
 function collapsibleStateFor(element: ChangelistTreeNode): vscode.TreeItemCollapsibleState {

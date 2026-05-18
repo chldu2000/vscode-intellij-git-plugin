@@ -12,6 +12,7 @@ import { StashService } from './git/stashService';
 import { DiffReviewPanel } from './views/diffReviewPanel';
 import { BranchTreeProvider } from './views/branchTreeProvider';
 import type { BranchTreeNode } from './views/branchTreeModel';
+import { ChangelistSelectionStore } from './views/changelistSelectionStore';
 import { ChangelistTreeProvider } from './views/changelistTreeProvider';
 import type { ChangelistTreeNode, FileNode } from './views/changelistTreeModel';
 import { LogViewProvider } from './views/logViewProvider';
@@ -28,9 +29,11 @@ export function activate(context: vscode.ExtensionContext): void {
   const stashes = new StashService(git);
   const shelves = new ShelfService(git, context.globalStorageUri.fsPath);
   const changelists = new ChangelistService(new MementoChangelistStore(context.workspaceState));
+  const changelistSelection = new ChangelistSelectionStore();
   const treeProvider = new ChangelistTreeProvider(
     repositories,
     changelists,
+    changelistSelection,
     () => vscode.workspace.workspaceFolders
   );
   const logProvider = new LogViewProvider(
@@ -56,6 +59,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(output);
   context.subscriptions.push(changelistTreeView);
+  context.subscriptions.push(changelistTreeView.onDidChangeCheckboxState((event) => {
+    treeProvider.handleCheckboxChange(event);
+  }));
   context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.log', logProvider));
   context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.branches', branchProvider));
 
@@ -65,7 +71,7 @@ export function activate(context: vscode.ExtensionContext): void {
       await treeProvider.refresh();
     }),
     vscode.commands.registerCommand('intellijGit.openDiffReview', async (node?: ChangelistTreeNode) => {
-      const target = await resolveDiffTarget(node, repositories);
+      const target = await resolveDiffTarget(node, repositories, changelistSelection);
 
       if (target === undefined) {
         await vscode.window.showInformationMessage('No Git repository found for diff review.');
@@ -75,10 +81,19 @@ export function activate(context: vscode.ExtensionContext): void {
       const loadState = async () => loadDiffReviewState(git, target);
       const state = await loadState();
 
-      diffReviewPanel.open(state, loadState);
+      diffReviewPanel.open(state, loadState, target.selectedPaths);
     }),
     vscode.commands.registerCommand('intellijGit.commitSelected', async () => {
-      await vscode.window.showInformationMessage('Commit selected changes is not implemented yet.');
+      const target = await resolveDiffTarget(undefined, repositories, changelistSelection);
+
+      if (target === undefined || target.selectedPaths.length === 0) {
+        await vscode.window.showInformationMessage('Select one or more files in Changelists before committing.');
+        return;
+      }
+
+      const loadState = async () => loadDiffReviewState(git, target);
+      const state = await loadState();
+      diffReviewPanel.open(state, loadState, target.selectedPaths);
     }),
     vscode.commands.registerCommand('intellijGit.createChangelist', async (node?: ChangelistTreeNode) => {
       const repositoryRoot = await resolveRepositoryRoot(node, repositories);
@@ -443,33 +458,42 @@ export function deactivate(): void {
 
 async function resolveDiffTarget(
   node: ChangelistTreeNode | undefined,
-  repositories: RepositoryService
-): Promise<{ repositoryRoot: string; paths: string[] } | undefined> {
+  repositories: RepositoryService,
+  changelistSelection: ChangelistSelectionStore
+): Promise<{ repositoryRoot: string; paths: string[]; selectedPaths: string[] } | undefined> {
   if (node?.kind === 'file') {
     return {
       repositoryRoot: node.repositoryRoot,
-      paths: [node.path]
+      paths: [node.path],
+      selectedPaths: changelistSelection.isSelected(node.repositoryRoot, node.path) ? [node.path] : []
     };
   }
 
   if (node?.kind === 'group') {
+    const paths = node.children.map((child) => child.path);
+
     return {
       repositoryRoot: node.repositoryRoot,
-      paths: node.children.map((child) => child.path)
+      paths,
+      selectedPaths: changelistSelection.selectedPaths(node.repositoryRoot).filter((path) => paths.includes(path))
     };
   }
 
   const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
   const discovered = await repositories.discover(workspaceFolders.map((folder) => folder.uri.fsPath));
-  const repository = discovered[0];
+  const repository = discovered.find((candidate) => changelistSelection.selectedPaths(candidate.root).length > 0)
+    ?? discovered[0];
 
   if (repository === undefined) {
     return undefined;
   }
 
+  const selectedPaths = changelistSelection.selectedPaths(repository.root);
+
   return {
     repositoryRoot: repository.root,
-    paths: []
+    paths: selectedPaths.length > 0 ? selectedPaths : [],
+    selectedPaths
   };
 }
 

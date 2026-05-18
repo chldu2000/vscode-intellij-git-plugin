@@ -6,6 +6,7 @@ import type { DiffReviewState, WebviewToExtensionMessage } from '../webview/mess
 import { canCommitSelectedChanges } from '../shared/commitValidation';
 import {
   createInitialSelection,
+  createSelectionForFiles,
   getSelectedSummary,
   toggleFile,
   toggleHunk,
@@ -27,10 +28,12 @@ export class DiffReviewPanel {
     private readonly output: vscode.OutputChannel
   ) {}
 
-  public open(state: DiffReviewPanelInput, reload?: DiffReviewReload): void {
+  public open(state: DiffReviewPanelInput, reload?: DiffReviewReload, selectedPaths: readonly string[] = []): void {
     this.state = {
       ...state,
-      selection: createInitialSelection(state.files),
+      selection: selectedPaths.length > 0
+        ? createSelectionForFiles(state.files, selectedPaths)
+        : createInitialSelection(state.files),
       commitMessage: '',
       commitOptions: {
         amend: false,
