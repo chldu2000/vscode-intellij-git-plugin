@@ -130,16 +130,16 @@ Files:
 
 Steps:
 
-- [ ] Detect merge, rebase, cherry-pick, revert, and bisect state using `.git` metadata and Git commands where needed.
-- [ ] Return a typed state object with user-facing reason strings.
-- [ ] Block selected commits when unsupported operation states are active.
-- [ ] Decide MVP detached-HEAD behavior and encode it as either blocked or explicitly supported.
+- [x] Detect merge, rebase, cherry-pick, revert, and bisect state using `.git` metadata and Git commands where needed.
+- [x] Return a typed state object with user-facing reason strings.
+- [x] Block selected commits when unsupported operation states are active.
+- [x] Decide MVP detached-HEAD behavior and encode it as either blocked or explicitly supported.
 
 Verification:
 
-- [ ] Add fixture tests for each state marker.
-- [ ] Run `npm test -- repositoryState commitService`.
-- [ ] Commit: `feat: gate commits during risky repository states`.
+- [x] Add fixture tests for each state marker.
+- [x] Run `npm test -- repositoryState commitService`.
+- [x] Commit: `feat: gate commits during risky repository states`.
 
 ### Task 6: Gate Binary and Staged Overlap Cases
 
