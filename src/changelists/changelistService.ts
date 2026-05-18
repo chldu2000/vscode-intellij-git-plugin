@@ -11,6 +11,7 @@ export interface ChangelistGroup {
   id: string;
   name: string;
   type: 'changelist' | 'derived';
+  active: boolean;
   files: GitFileStatus[];
 }
 
@@ -24,6 +25,7 @@ export class ChangelistService {
 
   public async create(repositoryRoot: string, name: string): Promise<Changelist> {
     const state = await this.loadOrCreate(repositoryRoot);
+    validateChangelistName(state, name);
     const now = Date.now();
     const changelist: Changelist = {
       id: createId(name, now),
@@ -41,6 +43,7 @@ export class ChangelistService {
   public async rename(repositoryRoot: string, changelistId: string, name: string): Promise<void> {
     const state = await this.loadOrCreate(repositoryRoot);
     const changelist = requireChangelist(state, changelistId);
+    validateChangelistName(state, name, changelistId);
     changelist.name = name;
     changelist.updatedAt = Date.now();
     await this.store.save(repositoryRoot, state);
@@ -105,6 +108,7 @@ export class ChangelistService {
         id: changelist.id,
         name: changelist.name,
         type: 'changelist',
+        active: changelist.active,
         files: []
       });
     }
@@ -137,6 +141,7 @@ export class ChangelistService {
         id: 'unversioned',
         name: 'Unversioned Files',
         type: 'derived',
+        active: false,
         files: unversioned
       });
     }
@@ -146,6 +151,7 @@ export class ChangelistService {
         id: 'merge-conflicts',
         name: 'Merge Conflicts',
         type: 'derived',
+        active: false,
         files: conflicts
       });
     }
@@ -177,6 +183,26 @@ export class ChangelistService {
     await this.store.save(repositoryRoot, initial);
     return initial;
   }
+}
+
+function validateChangelistName(state: ChangelistState, name: string, currentId?: string): void {
+  const normalized = normalizeName(name);
+
+  if (normalized.length === 0) {
+    throw new Error('Changelist name is required.');
+  }
+
+  const duplicate = state.changelists.some((changelist) => (
+    changelist.id !== currentId && normalizeName(changelist.name) === normalized
+  ));
+
+  if (duplicate) {
+    throw new Error(`Changelist already exists: ${name}`);
+  }
+}
+
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase();
 }
 
 function requireChangelist(state: ChangelistState, changelistId: string): Changelist {

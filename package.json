@@ -56,6 +56,26 @@
         "title": "IntelliJ Git: Commit Selected Changes"
       },
       {
+        "command": "intellijGit.createChangelist",
+        "title": "IntelliJ Git: Create Changelist"
+      },
+      {
+        "command": "intellijGit.renameChangelist",
+        "title": "IntelliJ Git: Rename Changelist"
+      },
+      {
+        "command": "intellijGit.deleteChangelist",
+        "title": "IntelliJ Git: Delete Changelist"
+      },
+      {
+        "command": "intellijGit.setActiveChangelist",
+        "title": "IntelliJ Git: Set Active Changelist"
+      },
+      {
+        "command": "intellijGit.moveFilesToChangelist",
+        "title": "IntelliJ Git: Move Files to Changelist"
+      },
+      {
         "command": "intellijGit.refreshLog",
         "title": "IntelliJ Git: Refresh Log"
       },
@@ -96,6 +116,66 @@
         "title": "IntelliJ Git: List Shelves"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "intellijGit.refresh",
+          "when": "view == intellijGit.changelists",
+          "group": "navigation"
+        },
+        {
+          "command": "intellijGit.createChangelist",
+          "when": "view == intellijGit.changelists",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "intellijGit.openDiffReview",
+          "when": "view == intellijGit.changelists && viewItem =~ /^(changelistGroup|derivedGroup|file)$/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "intellijGit.createChangelist",
+          "when": "view == intellijGit.changelists && viewItem == repository",
+          "group": "changelist@1"
+        },
+        {
+          "command": "intellijGit.setActiveChangelist",
+          "when": "view == intellijGit.changelists && viewItem == changelistGroup",
+          "group": "changelist@2"
+        },
+        {
+          "command": "intellijGit.renameChangelist",
+          "when": "view == intellijGit.changelists && viewItem == changelistGroup",
+          "group": "changelist@3"
+        },
+        {
+          "command": "intellijGit.deleteChangelist",
+          "when": "view == intellijGit.changelists && viewItem == changelistGroup",
+          "group": "changelist@4"
+        },
+        {
+          "command": "intellijGit.moveFilesToChangelist",
+          "when": "view == intellijGit.changelists && viewItem =~ /^(changelistGroup|file)$/",
+          "group": "changelist@5"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "intellijGit.renameChangelist",
+          "when": "false"
+        },
+        {
+          "command": "intellijGit.deleteChangelist",
+          "when": "false"
+        },
+        {
+          "command": "intellijGit.setActiveChangelist",
+          "when": "false"
+        }
+      ]
+    },
     "configuration": {
       "title": "IntelliJ Git",
       "properties": {

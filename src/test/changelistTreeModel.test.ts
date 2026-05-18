@@ -11,6 +11,7 @@ describe('buildChangelistTree', () => {
             id: 'feature',
             name: 'Feature',
             type: 'changelist',
+            active: true,
             files: [
               {
                 path: 'src/a.ts',
@@ -26,6 +27,7 @@ describe('buildChangelistTree', () => {
             id: 'unversioned',
             name: 'Unversioned Files',
             type: 'derived',
+            active: false,
             files: [
               {
                 path: 'notes.txt',
@@ -55,12 +57,15 @@ describe('buildChangelistTree', () => {
             repositoryRoot: '/repo',
             groupId: 'feature',
             groupType: 'changelist',
+            active: true,
             children: [
               {
                 id: 'file:/repo:src/a.ts',
                 kind: 'file',
                 label: 'src/a.ts',
                 repositoryRoot: '/repo',
+                groupId: 'feature',
+                groupType: 'changelist',
                 path: 'src/a.ts',
                 statusKind: 'modified'
               }
@@ -73,12 +78,15 @@ describe('buildChangelistTree', () => {
             repositoryRoot: '/repo',
             groupId: 'unversioned',
             groupType: 'derived',
+            active: false,
             children: [
               {
                 id: 'file:/repo:notes.txt',
                 kind: 'file',
                 label: 'notes.txt',
                 repositoryRoot: '/repo',
+                groupId: 'unversioned',
+                groupType: 'derived',
                 path: 'notes.txt',
                 statusKind: 'untracked'
               }

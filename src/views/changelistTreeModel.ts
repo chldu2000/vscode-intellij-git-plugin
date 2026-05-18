@@ -24,6 +24,7 @@ export interface GroupNode {
   repositoryRoot: string;
   groupId: string;
   groupType: 'changelist' | 'derived';
+  active: boolean;
   children: FileNode[];
 }
 
@@ -32,6 +33,8 @@ export interface FileNode {
   kind: 'file';
   label: string;
   repositoryRoot: string;
+  groupId: string;
+  groupType: 'changelist' | 'derived';
   path: string;
   statusKind: GitFileStatusKind;
 }
@@ -54,16 +57,19 @@ function buildGroupNode(repositoryRoot: string, group: ChangelistGroup): GroupNo
     repositoryRoot,
     groupId: group.id,
     groupType: group.type,
-    children: group.files.map((file) => buildFileNode(repositoryRoot, file))
+    active: group.active,
+    children: group.files.map((file) => buildFileNode(repositoryRoot, group, file))
   };
 }
 
-function buildFileNode(repositoryRoot: string, file: GitFileStatus): FileNode {
+function buildFileNode(repositoryRoot: string, group: ChangelistGroup, file: GitFileStatus): FileNode {
   return {
     id: `file:${repositoryRoot}:${file.path}`,
     kind: 'file',
     label: file.path,
     repositoryRoot,
+    groupId: group.id,
+    groupType: group.type,
     path: file.path,
     statusKind: file.kind
   };

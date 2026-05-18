@@ -37,7 +37,7 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
   public getTreeItem(element: ChangelistTreeNode): vscode.TreeItem {
     const item = new vscode.TreeItem(element.label, collapsibleStateFor(element));
     item.id = element.id;
-    item.contextValue = element.kind;
+    item.contextValue = contextValueFor(element);
 
     if (element.kind === 'file') {
       item.description = element.statusKind;
@@ -51,7 +51,7 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
     }
 
     if (element.kind === 'group') {
-      item.description = `${element.children.length}`;
+      item.description = element.active ? `${element.children.length} active` : `${element.children.length}`;
       item.checkboxState = vscode.TreeItemCheckboxState.Unchecked;
     }
 
@@ -69,6 +69,14 @@ export class ChangelistTreeProvider implements vscode.TreeDataProvider<Changelis
 
     return [];
   }
+}
+
+function contextValueFor(element: ChangelistTreeNode): string {
+  if (element.kind === 'group') {
+    return element.groupType === 'changelist' ? 'changelistGroup' : 'derivedGroup';
+  }
+
+  return element.kind;
 }
 
 function collapsibleStateFor(element: ChangelistTreeNode): vscode.TreeItemCollapsibleState {

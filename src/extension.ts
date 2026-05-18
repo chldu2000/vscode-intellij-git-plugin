@@ -13,7 +13,7 @@ import { DiffReviewPanel } from './views/diffReviewPanel';
 import { BranchTreeProvider } from './views/branchTreeProvider';
 import type { BranchTreeNode } from './views/branchTreeModel';
 import { ChangelistTreeProvider } from './views/changelistTreeProvider';
-import type { ChangelistTreeNode } from './views/changelistTreeModel';
+import type { ChangelistTreeNode, FileNode } from './views/changelistTreeModel';
 import { LogViewProvider } from './views/logViewProvider';
 import type { LogTreeNode } from './views/logTreeModel';
 
@@ -49,9 +49,13 @@ export function activate(context: vscode.ExtensionContext): void {
     async () => treeProvider.refresh(),
     output
   );
+  const changelistTreeView = vscode.window.createTreeView('intellijGit.changelists', {
+    treeDataProvider: treeProvider,
+    canSelectMany: true
+  });
 
   context.subscriptions.push(output);
-  context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.changelists', treeProvider));
+  context.subscriptions.push(changelistTreeView);
   context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.log', logProvider));
   context.subscriptions.push(vscode.window.registerTreeDataProvider('intellijGit.branches', branchProvider));
 
@@ -75,6 +79,99 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand('intellijGit.commitSelected', async () => {
       await vscode.window.showInformationMessage('Commit selected changes is not implemented yet.');
+    }),
+    vscode.commands.registerCommand('intellijGit.createChangelist', async (node?: ChangelistTreeNode) => {
+      const repositoryRoot = await resolveRepositoryRoot(node, repositories);
+
+      if (repositoryRoot === undefined) {
+        await vscode.window.showInformationMessage('No Git repository found.');
+        return;
+      }
+
+      const name = await promptForChangelistName(changelists, repositoryRoot, 'New changelist name');
+
+      if (name === undefined) {
+        return;
+      }
+
+      await changelists.create(repositoryRoot, name);
+      await treeProvider.refresh();
+      await vscode.window.showInformationMessage(`Created changelist ${name}.`);
+    }),
+    vscode.commands.registerCommand('intellijGit.renameChangelist', async (node?: ChangelistTreeNode) => {
+      if (node?.kind !== 'group' || node.groupType !== 'changelist') {
+        return;
+      }
+
+      const name = await promptForChangelistName(
+        changelists,
+        node.repositoryRoot,
+        'Rename changelist',
+        node.label,
+        node.groupId
+      );
+
+      if (name === undefined) {
+        return;
+      }
+
+      await changelists.rename(node.repositoryRoot, node.groupId, name);
+      await treeProvider.refresh();
+      await vscode.window.showInformationMessage(`Renamed changelist to ${name}.`);
+    }),
+    vscode.commands.registerCommand('intellijGit.deleteChangelist', async (node?: ChangelistTreeNode) => {
+      if (node?.kind !== 'group' || node.groupType !== 'changelist') {
+        return;
+      }
+
+      if (node.groupId === 'default') {
+        await vscode.window.showInformationMessage('The default changelist cannot be deleted.');
+        return;
+      }
+
+      const confirmed = await vscode.window.showWarningMessage(
+        `Delete changelist "${node.label}"? Its files will move back to Changes.`,
+        { modal: true },
+        'Delete'
+      );
+
+      if (confirmed !== 'Delete') {
+        return;
+      }
+
+      await changelists.delete(node.repositoryRoot, node.groupId);
+      await treeProvider.refresh();
+      await vscode.window.showInformationMessage(`Deleted changelist ${node.label}.`);
+    }),
+    vscode.commands.registerCommand('intellijGit.setActiveChangelist', async (node?: ChangelistTreeNode) => {
+      if (node?.kind !== 'group' || node.groupType !== 'changelist') {
+        return;
+      }
+
+      await changelists.setActive(node.repositoryRoot, node.groupId);
+      await treeProvider.refresh();
+      await vscode.window.showInformationMessage(`Set ${node.label} as active changelist.`);
+    }),
+    vscode.commands.registerCommand('intellijGit.moveFilesToChangelist', async (node?: ChangelistTreeNode) => {
+      const paths = selectedMovePaths(node, changelistTreeView.selection);
+      const repositoryRoot = moveRepositoryRoot(node, changelistTreeView.selection);
+
+      if (repositoryRoot === undefined || paths.length === 0) {
+        await vscode.window.showInformationMessage('Select one or more changed files to move.');
+        return;
+      }
+
+      const destination = await pickChangelist(changelists, repositoryRoot, 'Move files to changelist');
+
+      if (destination === undefined) {
+        return;
+      }
+
+      await changelists.moveFiles(repositoryRoot, destination.id, paths);
+      await treeProvider.refresh();
+      await vscode.window.showInformationMessage(
+        `Moved ${paths.length} file${paths.length === 1 ? '' : 's'} to ${destination.name}.`
+      );
     }),
     vscode.commands.registerCommand('intellijGit.refreshLog', async () => {
       output.appendLine('Log refresh requested.');
@@ -208,6 +305,122 @@ async function firstRepositoryRoot(repositories: RepositoryService): Promise<str
   const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
   const discovered = await repositories.discover(workspaceFolders.map((folder) => folder.uri.fsPath));
   return discovered[0]?.root;
+}
+
+async function resolveRepositoryRoot(
+  node: ChangelistTreeNode | undefined,
+  repositories: RepositoryService
+): Promise<string | undefined> {
+  if (node !== undefined) {
+    return node.repositoryRoot;
+  }
+
+  return firstRepositoryRoot(repositories);
+}
+
+async function promptForChangelistName(
+  changelists: ChangelistService,
+  repositoryRoot: string,
+  prompt: string,
+  value = '',
+  currentId?: string
+): Promise<string | undefined> {
+  const state = await changelists.getState(repositoryRoot);
+
+  return vscode.window.showInputBox({
+    prompt,
+    value,
+    validateInput: (input) => {
+      const normalized = input.trim().toLowerCase();
+
+      if (normalized.length === 0) {
+        return 'Changelist name is required.';
+      }
+
+      const duplicate = state.changelists.some((changelist) => (
+        changelist.id !== currentId && changelist.name.trim().toLowerCase() === normalized
+      ));
+
+      return duplicate ? `Changelist already exists: ${input}` : undefined;
+    }
+  });
+}
+
+async function pickChangelist(
+  changelists: ChangelistService,
+  repositoryRoot: string,
+  placeHolder: string
+): Promise<{ id: string; name: string } | undefined> {
+  const state = await changelists.getState(repositoryRoot);
+  const picked = await vscode.window.showQuickPick(
+    state.changelists.map((changelist) => ({
+      label: changelist.name,
+      description: changelist.active ? 'active' : undefined,
+      id: changelist.id,
+      name: changelist.name
+    })),
+    { placeHolder }
+  );
+
+  if (picked === undefined) {
+    return undefined;
+  }
+
+  return {
+    id: picked.id,
+    name: picked.name
+  };
+}
+
+function selectedMovePaths(
+  node: ChangelistTreeNode | undefined,
+  selection: readonly ChangelistTreeNode[]
+): string[] {
+  const selectedFiles = selection.filter((candidate) => candidate.kind === 'file' && isMovableFile(candidate));
+
+  if (node?.kind === 'file' && isMovableFile(node)) {
+    const sameRepositorySelection = selectedFiles.filter((candidate) => candidate.repositoryRoot === node.repositoryRoot);
+
+    if (sameRepositorySelection.some((candidate) => candidate.path === node.path)) {
+      return uniquePaths(sameRepositorySelection.map((candidate) => candidate.path));
+    }
+
+    return [node.path];
+  }
+
+  if (node?.kind === 'group' && node.groupType === 'changelist') {
+    return uniquePaths(node.children.filter(isMovableFile).map((child) => child.path));
+  }
+
+  if (node === undefined && selectedFiles.length > 0) {
+    const repositoryRoot = selectedFiles[0]?.repositoryRoot;
+    return uniquePaths(
+      selectedFiles
+        .filter((candidate) => candidate.repositoryRoot === repositoryRoot)
+        .map((candidate) => candidate.path)
+    );
+  }
+
+  return [];
+}
+
+function moveRepositoryRoot(
+  node: ChangelistTreeNode | undefined,
+  selection: readonly ChangelistTreeNode[]
+): string | undefined {
+  if (node !== undefined) {
+    return node.repositoryRoot;
+  }
+
+  return selection.find((candidate) => candidate.kind === 'file' && isMovableFile(candidate))?.repositoryRoot;
+}
+
+function isMovableFile(node: ChangelistTreeNode): node is FileNode {
+  return node.kind === 'file' && node.groupType === 'changelist';
+}
+
+function uniquePaths(paths: string[]): string[] {
+  return [...new Set(paths)];
 }
 
 async function loadDiffReviewState(

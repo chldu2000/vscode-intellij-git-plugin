@@ -39,6 +39,16 @@ describe('ChangelistService', () => {
     ]);
   });
 
+  it('rejects empty and duplicate changelist names', async () => {
+    const service = new ChangelistService(new InMemoryChangelistStore());
+
+    await expect(service.create('/repo', '   ')).rejects.toThrow('Changelist name is required.');
+    const feature = await service.create('/repo', 'Feature work');
+
+    await expect(service.create('/repo', 'feature WORK')).rejects.toThrow('Changelist already exists');
+    await expect(service.rename('/repo', feature.id, 'Changes')).rejects.toThrow('Changelist already exists');
+  });
+
   it('moves file assignments and returns derived groups for status entries', async () => {
     const service = new ChangelistService(new InMemoryChangelistStore());
     const feature = await service.create('/repo', 'Feature work');
@@ -85,24 +95,28 @@ describe('ChangelistService', () => {
         id: feature.id,
         name: 'Feature work',
         type: 'changelist',
+        active: false,
         files: [expect.objectContaining({ path: 'src/a.ts' })]
       },
       {
         id: 'default',
         name: 'Changes',
         type: 'changelist',
+        active: true,
         files: [expect.objectContaining({ path: 'src/other.ts' })]
       },
       {
         id: 'unversioned',
         name: 'Unversioned Files',
         type: 'derived',
+        active: false,
         files: [expect.objectContaining({ path: 'notes.txt' })]
       },
       {
         id: 'merge-conflicts',
         name: 'Merge Conflicts',
         type: 'derived',
+        active: false,
         files: [expect.objectContaining({ path: 'conflicted.ts' })]
       }
     ]);
