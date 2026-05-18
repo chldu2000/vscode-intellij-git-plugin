@@ -5,7 +5,7 @@ import type { DiffFile } from './diffParser';
 import type { GitService } from './gitService';
 import { detectRepositoryOperationState } from './repositoryState';
 import { buildSelectedPatch } from './patchBuilder';
-import type { DiffSelection } from '../shared/selection';
+import { fileKey, getSelectedFileKeys, hasSelectedFileEntry, type DiffSelection } from '../shared/selection';
 
 export interface CommitSelectedOptions {
   message: string;
@@ -32,7 +32,7 @@ export class CommitService {
       throw new Error('Commit message is required.');
     }
 
-    await this.ensureSupportedRepositoryState(repositoryRoot);
+    await this.ensureSupportedRepositoryState(repositoryRoot, files, selection);
 
     const patch = buildSelectedPatch(files, selection);
 
@@ -121,7 +121,11 @@ export class CommitService {
     return `${message}\n\nSigned-off-by: ${signer.name} <${signer.email}>`;
   }
 
-  private async ensureSupportedRepositoryState(repositoryRoot: string): Promise<void> {
+  private async ensureSupportedRepositoryState(
+    repositoryRoot: string,
+    files: DiffFile[],
+    selection: DiffSelection
+  ): Promise<void> {
     const operationState = await detectRepositoryOperationState(this.git, repositoryRoot);
 
     if (!operationState.supported) {
@@ -132,6 +136,43 @@ export class CommitService {
 
     if (unresolved.stdout.trim().length > 0) {
       throw new Error('Cannot commit selected changes while conflicts are unresolved.');
+    }
+
+    this.ensureNoSelectedBinaryFiles(files, selection);
+    await this.ensureNoStagedOverlap(repositoryRoot, selection);
+  }
+
+  private ensureNoSelectedBinaryFiles(files: DiffFile[], selection: DiffSelection): void {
+    const selectedBinaryFiles = files
+      .filter((file) => file.binary && hasSelectedFileEntry(selection, fileKey(file)))
+      .map(fileKey);
+
+    if (selectedBinaryFiles.length > 0) {
+      throw new Error(
+        `Cannot commit selected binary changes yet: ${selectedBinaryFiles.join(', ')}. ` +
+        'Commit binary files with Git staging or deselect them.'
+      );
+    }
+  }
+
+  private async ensureNoStagedOverlap(repositoryRoot: string, selection: DiffSelection): Promise<void> {
+    const selectedPaths = new Set(getSelectedFileKeys(selection));
+
+    if (selectedPaths.size === 0) {
+      return;
+    }
+
+    const staged = await this.git.exec(repositoryRoot, ['diff', '--cached', '--name-only']);
+    const overlappingPaths = staged.stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((pathName) => pathName.length > 0 && selectedPaths.has(pathName));
+
+    if (overlappingPaths.length > 0) {
+      throw new Error(
+        `Cannot commit selected changes while staged changes overlap: ${overlappingPaths.join(', ')}. ` +
+        'Unstage those paths or deselect them before committing.'
+      );
     }
   }
 }

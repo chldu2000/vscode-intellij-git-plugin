@@ -155,6 +155,16 @@ export function getSelectedSummary(selection: DiffSelection): SelectedSummary {
   return { files, hunks, lines };
 }
 
+export function getSelectedFileKeys(selection: DiffSelection): string[] {
+  return Object.keys(selection.selectedLinesByFile).filter((key) => (
+    Object.values(selection.selectedLinesByFile[key]).some((selectedLines) => selectedLines.length > 0)
+  ));
+}
+
+export function hasSelectedFileEntry(selection: DiffSelection, key: string): boolean {
+  return Object.hasOwn(selection.selectedLinesByFile, key);
+}
+
 export function fileKey(file: DiffFile): string {
   return file.newPath ?? file.oldPath ?? 'unknown';
 }

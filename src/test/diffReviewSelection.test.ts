@@ -3,6 +3,7 @@ import type { DiffFile } from '../git/diffParser';
 import {
   createInitialSelection,
   createSelectionForFiles,
+  getSelectedFileKeys,
   getHunkSelectionState,
   getSelectedSummary,
   toggleFile,
@@ -58,6 +59,7 @@ describe('diff review selection', () => {
       hunks: 2,
       lines: 3
     });
+    expect(getSelectedFileKeys(selection)).toEqual(['src/a.ts']);
   });
 });
 

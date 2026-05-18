@@ -190,6 +190,38 @@ describe('CommitService', () => {
       env: authorEnv().env
     })).rejects.toThrow('merge is in progress');
   });
+
+  it('blocks binary file selection before patch construction', async () => {
+    const binaryFile = {
+      oldPath: 'image.bin',
+      newPath: 'image.bin',
+      changeType: 'modified' as const,
+      binary: true,
+      hunks: []
+    };
+
+    await expect(commits.commitSelected(repo, [binaryFile], {
+      selectedLinesByFile: {
+        'image.bin': {}
+      }
+    }, {
+      message: 'binary selected',
+      env: authorEnv().env
+    })).rejects.toThrow('Cannot commit selected binary changes yet: image.bin');
+  });
+
+  it('blocks selected commits when staged changes overlap selected paths', async () => {
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\ntwo\nthree\nfour\n', 'utf8');
+    await git.exec(repo, ['add', 'file.txt']);
+    await writeFile(path.join(repo, 'file.txt'), 'ONE\nTWO\nthree\nfour\n', 'utf8');
+    const files = parseUnifiedDiff((await git.exec(repo, ['diff', '--', 'file.txt'])).stdout);
+    const selection = toggleFile(createInitialSelection(files), files[0], true);
+
+    await expect(commits.commitSelected(repo, files, selection, {
+      message: 'overlapping staged changes',
+      env: authorEnv().env
+    })).rejects.toThrow('staged changes overlap: file.txt');
+  });
 });
 
 function authorEnv() {
