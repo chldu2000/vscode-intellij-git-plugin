@@ -78,6 +78,22 @@
       {
         "command": "intellijGit.forceCheckoutBranch",
         "title": "IntelliJ Git: Force Checkout Branch"
+      },
+      {
+        "command": "intellijGit.stashChanges",
+        "title": "IntelliJ Git: Stash Local Changes"
+      },
+      {
+        "command": "intellijGit.listStashes",
+        "title": "IntelliJ Git: List Stashes"
+      },
+      {
+        "command": "intellijGit.createShelf",
+        "title": "IntelliJ Git: Create Shelf"
+      },
+      {
+        "command": "intellijGit.listShelves",
+        "title": "IntelliJ Git: List Shelves"
       }
     ],
     "configuration": {

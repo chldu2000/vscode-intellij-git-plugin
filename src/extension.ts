@@ -7,6 +7,8 @@ import { parseUnifiedDiff } from './git/diffParser';
 import { GitService } from './git/gitService';
 import { LogService } from './git/logService';
 import { RepositoryService } from './git/repositoryService';
+import { ShelfService } from './git/shelfService';
+import { StashService } from './git/stashService';
 import { DiffReviewPanel } from './views/diffReviewPanel';
 import { BranchTreeProvider } from './views/branchTreeProvider';
 import type { BranchTreeNode } from './views/branchTreeModel';
@@ -23,6 +25,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const branches = new BranchService(git);
   const commits = new CommitService(git);
   const logs = new LogService(git);
+  const stashes = new StashService(git);
+  const shelves = new ShelfService(git, context.globalStorageUri.fsPath);
   const changelists = new ChangelistService(new MementoChangelistStore(context.workspaceState));
   const treeProvider = new ChangelistTreeProvider(
     repositories,
@@ -113,6 +117,79 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand('intellijGit.forceCheckoutBranch', async (node?: BranchTreeNode) => {
       await checkoutBranch(node, branches, branchProvider, treeProvider, output, true);
+    }),
+    vscode.commands.registerCommand('intellijGit.stashChanges', async () => {
+      const repositoryRoot = await firstRepositoryRoot(repositories);
+      if (repositoryRoot === undefined) {
+        await vscode.window.showInformationMessage('No Git repository found.');
+        return;
+      }
+
+      const message = await vscode.window.showInputBox({
+        prompt: 'Stash message',
+        value: 'IntelliJ Git local changes'
+      });
+
+      if (message === undefined) {
+        return;
+      }
+
+      await stashes.create(repositoryRoot, message);
+      await treeProvider.refresh();
+      await vscode.window.showInformationMessage('Stashed local changes.');
+    }),
+    vscode.commands.registerCommand('intellijGit.listStashes', async () => {
+      const repositoryRoot = await firstRepositoryRoot(repositories);
+      if (repositoryRoot === undefined) {
+        await vscode.window.showInformationMessage('No Git repository found.');
+        return;
+      }
+
+      const items = await stashes.list(repositoryRoot);
+      await vscode.window.showQuickPick(
+        items.map((stash) => ({
+          label: stash.ref,
+          description: stash.hash.slice(0, 12),
+          detail: stash.message
+        })),
+        { placeHolder: 'Git stashes' }
+      );
+    }),
+    vscode.commands.registerCommand('intellijGit.createShelf', async () => {
+      const repositoryRoot = await firstRepositoryRoot(repositories);
+      if (repositoryRoot === undefined) {
+        await vscode.window.showInformationMessage('No Git repository found.');
+        return;
+      }
+
+      const name = await vscode.window.showInputBox({
+        prompt: 'Shelf name',
+        value: 'Local shelf'
+      });
+
+      if (name === undefined) {
+        return;
+      }
+
+      const shelf = await shelves.create(repositoryRoot, name);
+      await vscode.window.showInformationMessage(`Created shelf ${shelf.name}`);
+    }),
+    vscode.commands.registerCommand('intellijGit.listShelves', async () => {
+      const repositoryRoot = await firstRepositoryRoot(repositories);
+      if (repositoryRoot === undefined) {
+        await vscode.window.showInformationMessage('No Git repository found.');
+        return;
+      }
+
+      const items = await shelves.list(repositoryRoot);
+      await vscode.window.showQuickPick(
+        items.map((shelf) => ({
+          label: shelf.name,
+          description: new Date(shelf.createdAt).toLocaleString(),
+          detail: shelf.patchPath
+        })),
+        { placeHolder: 'Shelves' }
+      );
     })
   );
 
@@ -125,6 +202,12 @@ export function activate(context: vscode.ExtensionContext): void {
   void branchProvider.refresh().catch((error: unknown) => {
     output.appendLine(error instanceof Error ? error.message : String(error));
   });
+}
+
+async function firstRepositoryRoot(repositories: RepositoryService): Promise<string | undefined> {
+  const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+  const discovered = await repositories.discover(workspaceFolders.map((folder) => folder.uri.fsPath));
+  return discovered[0]?.root;
 }
 
 async function loadDiffReviewState(
